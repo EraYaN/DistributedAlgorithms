@@ -49,14 +49,14 @@ public class Exercise1 extends UnicastRemoteObject implements Exercise1_RMI {
 
     @Override
     public void rxAcknowledgement(Acknowledgement a) {
-        System.out.format("Received acknowledgement for message sent at %s by %d from %d at %s\n", format.format(a.m.timestamp), a.m.srcID, a.m.destID, format.format(a.timestamp));
+        System.out.format("Received acknowledgement for message sent at %s by %d to %d at %s\n", format.format(a.m.timestamp), a.m.srcID, a.m.destID, format.format(a.timestamp));
 
-        //if (a.m.sender.id == localID) {
+        if (a.m.destID == localID) {
             acknowledgements++;
 
-            if (acknowledgements == swarmSize) {
+            if (acknowledgements >= swarmSize) {
                 System.out.format("Message sent at %s has been acknowledged by all instances\n", format.format(a.m.timestamp));
             }
-        //}
+        }
     }
 }

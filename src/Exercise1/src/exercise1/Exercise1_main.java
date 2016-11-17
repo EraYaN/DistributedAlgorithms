@@ -77,10 +77,10 @@ public class Exercise1_main {
         } catch (RemoteException e) {
             e.printStackTrace();
         } finally {
-            if(obj!=null)
-                UnicastRemoteObject.unexportObject(obj.ex, true);
-            if(rmiRegistry!=null && exportedRMI)
-                UnicastRemoteObject.unexportObject(rmiRegistry, true);
+           // if(obj!=null)
+            //    UnicastRemoteObject.unexportObject(obj.ex, true);
+            //if(rmiRegistry!=null && exportedRMI)
+            //    UnicastRemoteObject.unexportObject(rmiRegistry, true);
         }               
     }
     
