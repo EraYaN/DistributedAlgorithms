@@ -5,11 +5,13 @@
  */
 package exercise1;
 
+import java.io.Serializable;
+
 /**
  *
  * @author Robin
  */
-public class Message {
+public class Message implements Serializable{
 
     public long timestamp = 0;
     public int sender = 0;

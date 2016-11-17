@@ -91,7 +91,7 @@ public class Exercise1 extends UnicastRemoteObject
                 
                 //TODO make object hang until connected.
                 if (remoteInstance.HasObject()) {
-                    ((Exercise1) remoteInstance.object).rxMessage(m);
+                    ((Exercise1_RMI) remoteInstance.object).rxMessage(m);
                     System.out.format("Sent packet to %d.\n", id);
                 }
             } catch (Exception e) {
