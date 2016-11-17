@@ -44,8 +44,8 @@ public class Exercise1_main {
         String localHost = "localhost"; 
         Map<Integer, Instance> allInstances = new HashMap<Integer, Instance>();
         //TODO: Implament read from file (csv?, json?) Probably whatever is easier in java.
-        allInstances.put(1, new Instance(1,projectId,"145.94.4.87",localPort));
-        //allInstances.put(2, new Instance(2,projectId,"145.94.5.237",localPort));       
+        allInstances.put(1, new Instance(1,projectId,"192.168.178.13",localPort));
+        allInstances.put(2, new Instance(2,projectId,"192.168.178.12",localPort));       
         
                
         Registry rmiRegistry = null;

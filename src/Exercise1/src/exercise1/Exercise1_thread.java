@@ -5,6 +5,7 @@
  */
 package exercise1;
 
+import java.rmi.NoSuchObjectException;
 import java.rmi.RemoteException;
 import java.util.Date;
 import java.util.Map;
@@ -64,7 +65,12 @@ public class Exercise1_thread implements Runnable{
 
                 //TODO make object hang until connected.
                 if (remoteInstance.HasObject()) {
+                    try{
                     ((Exercise1_RMI) remoteInstance.object).rxMessage(m);
+                    } catch(NoSuchObjectException nsoe){ 
+                        remoteInstance.Lookup();
+                        ((Exercise1_RMI) remoteInstance.object).rxMessage(m);
+                    }
                     System.out.format("Sent packet to %d.\n", id);
                 }
             } catch (Exception e) {
@@ -72,7 +78,7 @@ public class Exercise1_thread implements Runnable{
             }            
         }
         
-        while(ex.acknowledgements != remoteInstances.size()){
+        while(ex.acknowledgements < remoteInstances.size()){
             try{
                 Thread.sleep(25); 
             } catch(Exception e){
