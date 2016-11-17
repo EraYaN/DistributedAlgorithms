@@ -1,0 +1,21 @@
+%!TEX program = xelatex
+\documentclass[final]{scrreprt} %scrreprt of scrartcl
+\input{../../.library/preamble.tex}
+\input{../../.library/style.tex}
+\addbibresource{../../.library/bibliography.bib}
+\begin{document}
+
+\chapter{Conclusion}
+
+The wireless charging system works as intended since it can fully charge the capacitor bank and goes to over-voltage protection when being overcharged.
+Also, when the car is removed from the charging spot, the charger goes into over-current protection, which indicates a solid resonance.\\
+During the mid-term we successfully made use of the sensors to come to a standstill in front of a wall.
+The car has an emergency stop feature in case of an obstacle however during the final challenge we haven't made use of the sensors as we didn't reach the third challenge.\\
+The designed matched filter works well and produces notable peaks allowing for good estimation of the TDOA.\\
+Finally, we managed to implement localization mainly using our own algorithm.
+It proved itself to work well as we were able to track our location with an accuracy of about 5 cm.
+In case of trouble we could fall back on the second algorithm which is slightly less accurate.\\
+At the final challenge our car drove in the wrong direction which we can attribute to an unfortunate misplaced minus sign.\\
+All in all the produced system works rather well and we feel like it would've been better in case we had more time to test KITT.
+
+\end{document}

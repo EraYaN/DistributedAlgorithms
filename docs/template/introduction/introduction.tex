@@ -1,0 +1,36 @@
+%!TEX program = xelatex
+\documentclass[final]{scrreprt} %scrreprt of scrartcl
+\input{../../.library/preamble.tex}
+\input{../../.library/style.tex}
+\addbibresource{../../.library/bibliography.bib}
+\begin{document}
+\chapter{Introduction}
+With renewable energy rapidly becoming more and more important, future cars will see a major overhaul. 
+An increasing amount of cars become hybrid or fully electric. 
+To become familiar with this development a R/C car is modified to become smart and 'green'.
+KITT, as the R/C car is called, features a wireless charging system, an anti-collision system and is able to autonomously drive in a x,y- plane while avoiding obstacles and other cars.
+Certain requirements are to be met regarding these properties. 
+The aim is to optimize every property and preferably exceed the requirements.
+\\\\
+For the final competition we have to deal with a set of challenges. 
+When KITT leaves the charging station, the station has to switch off automatically (over-current protection).
+For the first challenge KITT has to drive to a specific point in the field. 
+When KITT reaches the destination it must stop and the PC must give a signal. 
+In the second challenge KITT has to drive from the starting point to a specific point in the field over specified way-points.
+The third challenge is practically the same as the second, except that in challenge three there will be obstacles on the route that we need avoid.
+In the last challenge the car needs to drive to a specific point while avoiding an other car. 
+\\\\
+In the first chapter we will briefly discuss our wireless charging system and give results regarding the efficiency of the charging system.
+Following, in the second chapter, we will talk about how we handled the communication of the system. 
+Here we will give some system parameters. 
+Then we will explain how we obtained our state-space model and the controller design is discussed. 
+After that, in the localization chapter, we will discuss our matched filter and the script used for the localization will be explained. 
+Lastly, in the final chapter, we disclose how we integrated the different subsections and combined it all into one system; KITT.
+
+
+%Via the wireless charging system ten \unit[350]{F}-supercapacitors in series should be charged in less than 4 minutes. 
+%This system will be implemented with the use of coils seperated by a \unit[6]{cm} distance. 
+%The input voltage is \unit[18]{V} and the supercapacitors should be charged to \unit[20]{V}. 
+%Furthermore, KITT should be able to bridge a 3 meter distance to a wall within 3 seconds. 
+%At less than \unit[10]{cm} of the wall KITT should come to a standstill without hitting the wall or performing a large overshoot.
+\end{document}

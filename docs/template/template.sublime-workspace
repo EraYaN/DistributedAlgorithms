@@ -1,0 +1,331 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "template.tex",
+			"settings":
+			{
+				"buffer_size": 636,
+				"line_ending": "Windows"
+			}
+		}
+	],
+	"build_system": "Packages/LaTeXTools/LaTeX.sublime-build",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "Traditional",
+	"command_palette":
+	{
+		"height": 262.0,
+		"last_filter": "Package Control: in",
+		"selected_items":
+		[
+			[
+				"Package Control: in",
+				"Package Control: Install Package"
+			],
+			[
+				"Package Control: instal",
+				"Package Control: Install Package"
+			],
+			[
+				"Package Control: insta",
+				"Package Control: Install Package"
+			]
+		],
+		"width": 368.0
+	},
+	"console":
+	{
+		"height": 126.0,
+		"history":
+		[
+			"import urllib.request,os,hashlib; h = '2915d1851351e5ee549c20394736b442' + '8bc59f460fa1548d1514676163dafc88'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://packagecontrol.io/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by) "
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/F/Users/Erwin/Documents/GitHub/DistributedAlgorithms/docs/template"
+	],
+	"file_history":
+	[
+		"/F/Users/Erwin/Documents/GitHub/RailwayCrossingModel/docs/.library/style.tex",
+		"/F/Users/Erwin/Documents/GitHub/RailwayCrossingModel/docs/.library/preamble.tex",
+		"/F/Users/Erwin/Documents/GitHub/RailwayCrossingModel/docs/.library/opentype-info.tex",
+		"/F/Users/Erwin/Documents/GitHub/RailwayCrossingModel/docs/.library/bibliography.bib",
+		"/F/Users/Erwin/Documents/GitHub/RailwayCrossingModel/docs/template/template.sublime-project",
+		"/F/Users/Erwin/Documents/GitHub/RailwayCrossingModel/docs/.library/title.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/implementation/charge-redistribution-gd.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/test-plan/testing-setup.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/design/current-sharing-gd.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/requirements/system.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/test-plan/current-sharing-cs.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/test-plan/balanced-solar-module.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/test-plan/algorithm-cs.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/appendices/appendices.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/appendices/resources/app-pv-model-parameters-curve.tikz",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/requirements/functional.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/requirements/introduction.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/conclusions/algorithm-cs.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/design/algorithm-cs.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/.library/bibliography.bib",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/implementation/algorithm-cs.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/testing-results/resources/adc-measurement.tikz",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/state-of-the-art/gate-driver-topologies-gd.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/testing-results/balanced-solar-module.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/simulation/dcr-vs-ddcr-gd.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/simulation/introduction-to-simulation.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/state-of-the-art/current-topologies.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/state-of-the-art/dcr-development.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/thesis.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/conclusions/balanced-solar-module.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/recommendations/recommendations-cs.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/recommendations/recommendations.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/abstract/abstract.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/testing-results/charge-redistribution-gd.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/testing-results/resources/float-rise.tikz",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/testing-results/resources/float-fall.tikz",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/testing-results/resources/upper-fet.tikz",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/testing-results/resources/lowside-prop-fall.tikz",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/testing-results/resources/lowside-prop-rise.tikz",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/testing-results/current-sharing-cs.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/testing-results/algorithm-cs.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/implementation/current-sharing-cs.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/design/resources/adaptive-comparison-power.tikz",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/appendices/appendices-gd.tex",
+		"/C/Users/Erwin/AppData/Roaming/Sublime Text 3/Packages/User/LaTeXTools.sublime-settings",
+		"/C/Users/Erwin/AppData/Roaming/Sublime Text 3/Packages/User/Preferences.sublime-settings",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/testing/current-sharing-cs.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/.library/title.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/appendices/appendices-cs.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/.library/preamble.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/challenges-proposed-solution/challenges-cs.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/introduction/problem-definition.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/introduction/thesis-composition.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/thesis.sublime-project",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/introduction/thesis-synopsis.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/challenges-proposed-solution/introduction.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/challenges-proposed-solution/challenges-gd.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/implementation/current-sharing-gd.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/test-plan/current-sharing-gd.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/implementation/supporting-toolset.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/design/current-sharing-cs.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/state-of-the-art/mppt-algorithms-cs.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/observations-discussion/current-sharing-gd.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/observations-discussion/current-sharing-cs.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/observations-discussion/charge-redistribution-gd.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/observations-discussion/balanced-solar-module.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/thesis/simulation/dcr-vs-ddcr.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/.library/style.tex",
+		"/F/Users/Erwin/Dropbox/EE_3_BEP/temporary/main.tex",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/literature-report/literature-report.sublime-project",
+		"/C/Users/Erwin/AppData/Roaming/Sublime Text 3/Packages/LaTeXTools/README.markdown",
+		"/F/Users/Erwin/Documents/GitHub/SoCeBa/docs/literature-report/literature-report.tex",
+		"/C/Users/Erwin/AppData/Roaming/Sublime Text 3/Packages/LaTeXTools/LaTeXTools.sublime-settings"
+	],
+	"find":
+	{
+		"height": 27.0
+	},
+	"find_in_files":
+	{
+		"height": 157.0,
+		"where_history":
+		[
+			"",
+			"*.tex",
+			"<open folders> *.tex",
+			"<open folders>"
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"\\n\\n",
+			"^[0-9]\\.[0-9]{3}\\t.*\\\\$",
+			"^[0-9]\\.[0-9]{3}",
+			"TODO",
+			"1\\.[0-9]",
+			"1.[0-9]",
+			"tab:requirements",
+			"includegraphics",
+			"diced",
+			"{MPPT}",
+			"{GD}",
+			"TODO",
+			"reqwuirements",
+			"reqw",
+			"{gs,a}",
+			"sec:simulation-power-space",
+			"\\si",
+			"$I_o$",
+			"LPC1768Data",
+			"sharingmos",
+			"stackmos",
+			"sm74611",
+			"sch:",
+			"sch:current-sharing-schematic",
+			"{ "
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": true,
+		"replace_history":
+		[
+			"\\n",
+			"",
+			"requirements",
+			"$i_o$",
+			"fig:",
+			"fig:current-sharing-schematic",
+			"{"
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": false
+	},
+	"groups":
+	[
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "template.tex",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 636,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								411,
+								411
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/LaTeX/LaTeX.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 27.0
+	},
+	"input":
+	{
+		"height": 55.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"output.latextools":
+	{
+		"height": 257.0
+	},
+	"pinned_build_system": "",
+	"project": "template.sublime-project",
+	"replace":
+	{
+		"height": 50.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 218.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}
