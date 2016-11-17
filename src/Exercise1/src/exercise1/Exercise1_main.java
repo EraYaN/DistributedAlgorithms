@@ -5,25 +5,33 @@
  */
 package exercise1;
 
+import static com.mkyong.utils.CSVUtils.parseLine;
+import java.io.File;
+import java.io.IOException;
 import java.rmi.*;
 import java.rmi.registry.Registry;
-import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 
 /**
  *
  * @author Erwin
  */
 public class Exercise1_main {
+
     //constants
-    public static final String projectId = "Exercise1";
-    public static final int localPort = 32516;
-    public static final int messageCount = 50;
+    public static final String PROJECT_ID = "Exercise1";
+    public static final int MESSAGE_COUNT = 5;
+    public static final int AUTO_START_DELAY = 5; // seconds
+    public static final String INSTANCES_FILE = "data/instances.csv";
+
     /**
      * @param args the command line arguments
+     * @throws java.lang.Exception
      */
-    public static void main(String[] args) throws Exception{
+    public static void main(String[] args) throws Exception {
         // Create and install a security manager
         if (System.getSecurityManager() == null) {
             System.setSecurityManager(new SecurityManager());
@@ -32,62 +40,92 @@ public class Exercise1_main {
         /*if (System.getSecurityManager() == null) {
         System.setSecurityManager(new RMISecurityManager());
         }*/
-        
+
+        Map<Integer, Instance> allInstances = new HashMap<>();
+
+        try {
+            Scanner scanner = new Scanner(new File(INSTANCES_FILE));
+            while (scanner.hasNext()) {
+                List<String> line = parseLine(scanner.nextLine());
+                try {
+                    int id = Integer.parseInt(line.get(0));
+                    String host = line.get(1);
+                    int port = Integer.parseInt(line.get(2));
+                    allInstances.put(id, new Instance(id, PROJECT_ID, host, port));
+                    System.out.println("Instance [id= " + line.get(0) + ", host= " + line.get(1) + " , port=" + line.get(2) + "]");
+                } catch (NumberFormatException e) {
+                    System.err.format("While parsing line \'%s\' a format occured.\n", line);
+                    System.exit(1);
+                }
+            }
+            scanner.close();
+        } catch (IOException e) {
+            System.err.format("Error occured while reading instance file %s\n", INSTANCES_FILE);
+            System.exit(1);
+        }
+
+        if (allInstances.size() == 0) {
+            System.err.format("No instances found in instance file %s\n", INSTANCES_FILE);
+            System.exit(1);
+        }
+
         int localID = 1;
+        boolean autoStarting = false;
         if (args.length > 0) {
             try {
                 localID = Integer.parseInt(args[0]);
+                if (!allInstances.containsKey(localID)) {
+                    System.err.println("Argument" + args[0] + " does not exists in the instance dictiopnary [localID].");
+                    System.exit(1);
+                }
             } catch (NumberFormatException e) {
                 System.err.println("Argument" + args[0] + " must be an integer [localID].");
                 System.exit(1);
             }
         }
-        String localHost = "localhost"; 
-        Instance localInstance;
-        Map<Integer, Instance> allInstances = new HashMap<Integer, Instance>();
-        //TODO: Implament read from file (csv?, json?) Probably whatever is easier in java.
-        allInstances.put(1, new Instance(1,projectId,"192.168.178.13",localPort));
-        allInstances.put(2, new Instance(2,projectId,"192.168.178.12",localPort));       
-        
-               
-        Registry rmiRegistry = null;
-        Exercise1_thread obj = null;
-        boolean exportedRMI = false;
+        if (args.length > 1) {
+            if ("autostart".equals(args[1])) {
+                autoStarting = true;
+            }
+        }
+
+        final Instance localInstance = allInstances.get(localID);
+
+        Registry rmiRegistry;
+        Exercise1_thread obj;
         try {
             System.out.println("Starting RMI Registry...");
-            rmiRegistry = java.rmi.registry.LocateRegistry.createRegistry(1099);
-            exportedRMI = true;
+            rmiRegistry = java.rmi.registry.LocateRegistry.createRegistry(localInstance.port);
         } catch (RemoteException e) {
-            rmiRegistry = java.rmi.registry.LocateRegistry.getRegistry(1099);
+            rmiRegistry = java.rmi.registry.LocateRegistry.getRegistry(localInstance.port);
         }
-        try {  
-            if(rmiRegistry!=null){
-                System.out.println("Running...");
-                localInstance = allInstances.get(localID);
+        try {
+            if (rmiRegistry != null) {                
+                System.out.format("Running as instance %d...\n", localInstance.id);
                 allInstances.remove(localID);
-                obj = new Exercise1_thread(localInstance,allInstances,messageCount);
-                
-                System.out.format("Listening on port %s.\n", localPort);
-                
-                System.out.format("Press enter to continue to send %d messages to %d hosts...\n",messageCount,allInstances.size());
-                System.in.read();
+                obj = new Exercise1_thread(localInstance, allInstances, MESSAGE_COUNT);
+
+                System.out.format("Listening on %s:%d.\n", localInstance.host, localInstance.port);
+
+                if (!autoStarting) {
+                    System.out.format("Press enter to continue to send %d messages to %d hosts...\n", MESSAGE_COUNT, allInstances.size());
+                    System.in.read();
+                } else {
+                    System.out.format("Waiting %d seconds to send %d messages to %d hosts...\n", AUTO_START_DELAY, MESSAGE_COUNT, allInstances.size());
+                    Thread.sleep(AUTO_START_DELAY * 1000);
+                }
                 //This actually starts sending one message to each remote.
                 Thread t = new Thread(obj);
                 t.start();
                 t.join();
                 System.out.println("Exiting...");
                 System.exit(0);
-            } else {                
+            } else {
                 System.err.println("RMI Registry not available.");
             }
         } catch (RemoteException e) {
             e.printStackTrace();
-        } finally {
-           // if(obj!=null)
-            //    UnicastRemoteObject.unexportObject(obj.ex, true);
-            //if(rmiRegistry!=null && exportedRMI)
-            //    UnicastRemoteObject.unexportObject(rmiRegistry, true);
-        }               
+        }
     }
-    
+
 }

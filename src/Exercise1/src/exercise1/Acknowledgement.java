@@ -10,10 +10,11 @@ package exercise1;
  * @author Robin
  */
 public class Acknowledgement extends Message {
+
     Message m = null;
-    
+
     public Acknowledgement(Message M, long Timestamp, Exercise1_RMI Sender) {
-        super(M.destID,M.srcID, Timestamp, Sender);
-        m = M;     
+        super(M.destID, M.srcID, Timestamp, Sender);
+        m = M;
     }
 }

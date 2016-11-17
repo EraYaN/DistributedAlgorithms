@@ -9,52 +9,51 @@ import java.rmi.*;
 import java.rmi.server.UnicastRemoteObject;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Map;
-import java.util.Random;
 
 /**
  *
  * @author Erwin
  */
 public class Exercise1 extends UnicastRemoteObject implements Exercise1_RMI {
-    
+
     int localID;
     int swarmSize;
     int totalMessageCount;
-    
+
     public int acknowledgements = 0;
     public int packetsReceived = 0;
-    
-    private static final SimpleDateFormat format = new SimpleDateFormat("HH:mm:ss.mmmm");
-       
-    public Exercise1(int LocalID, int SwarmSize) throws RemoteException{
-        this(LocalID,SwarmSize,1);
-    }  
-    public Exercise1(int LocalID, int SwarmSize, int TotalMessageCount) throws RemoteException{
+
+    private final SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss.mmmm");
+
+    public Exercise1(int LocalID, int SwarmSize) throws RemoteException {
+        this(LocalID, SwarmSize, 1);
+    }
+
+    public Exercise1(int LocalID, int SwarmSize, int TotalMessageCount) throws RemoteException {
         localID = LocalID;
         swarmSize = SwarmSize;
         totalMessageCount = TotalMessageCount;
-    }  
+    }
 
     @Override
     public void rxMessage(Message m) {
-        System.out.format("Received packet from %d at %s\n", m.srcID, format.format(m.timestamp));
+        System.out.format("Received packet from %d at %s\n", m.srcID, formatter.format(m.timestamp));
 
         try {
             Exercise1_RMI sender = m.sender;
             Acknowledgement a = new Acknowledgement(m, (new Date()).getTime(), this);
             if (sender != null) {
                 sender.rxAcknowledgement(a);
-            } else {                
+            } else {
                 System.out.format("Packet from %d does not have an Object.\n", m.sender);
             }
-        } catch (Exception e) {
+        } catch (RemoteException e) {
             e.printStackTrace();
         }
         if (m.destID == localID) {
             packetsReceived++;
 
-            if (packetsReceived >= swarmSize*totalMessageCount) {
+            if (packetsReceived >= swarmSize * totalMessageCount) {
                 System.out.println("Messages received from the whole swarm.");
             }
         }
@@ -62,12 +61,12 @@ public class Exercise1 extends UnicastRemoteObject implements Exercise1_RMI {
 
     @Override
     public void rxAcknowledgement(Acknowledgement a) {
-        System.out.format("Received acknowledgement for message sent at %s by %d to %d at %s\n", format.format(a.m.timestamp), a.m.srcID, a.m.destID, format.format(a.timestamp));
+        System.out.format("Received acknowledgement for message sent at %s by %d to %d at %s\n", formatter.format(a.m.timestamp), a.m.srcID, a.m.destID, formatter.format(a.timestamp));
 
         if (a.m.srcID == localID) {
             acknowledgements++;
 
-            if (acknowledgements >= swarmSize*totalMessageCount) {
+            if (acknowledgements >= swarmSize * totalMessageCount) {
                 System.out.println("Message acknowledgements received from the whole swarm.");
             }
         }
