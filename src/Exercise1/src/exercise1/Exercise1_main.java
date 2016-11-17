@@ -45,7 +45,7 @@ public class Exercise1_main {
         Map<Integer, Instance> allInstances = new HashMap<Integer, Instance>();
         //TODO: Implament read from file (csv?, json?) Probably whatever is easier in java.
         allInstances.put(1, new Instance(1,projectId,"erayan.duckdns.org",localPort));
-        allInstances.put(2, new Instance(2,projectId,"robin.something.com",localPort));       
+        //allInstances.put(2, new Instance(2,projectId,"robin.something.com",localPort));       
         
                
         Registry rmiRegistry = null;
@@ -64,7 +64,7 @@ public class Exercise1_main {
                 //TODO filter out the localInstance from the allInstances for the second parameter LINQ would have been nice, lambda should also be available in java 8
                 obj = new Exercise1(allInstances.get(localID),allInstances);
                 
-                System.out.format("Listening on %s.\n","port 1099");
+                System.out.format("Listening on port %s.\n", localPort);
                 
                 System.out.println("Press enter to continue...");
                 System.in.read();

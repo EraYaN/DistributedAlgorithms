@@ -12,5 +12,6 @@ import java.rmi.Remote;
  * @author Erwin
  */
 public interface Exercise1_RMI extends Remote {
-    public void rxPacket(double t) throws java.rmi.RemoteException;
+    public void rxMessage(Message m) throws java.rmi.RemoteException;
+    public void rxAcknowledgement(Acknowledgement a) throws java.rmi.RemoteException;
 }
