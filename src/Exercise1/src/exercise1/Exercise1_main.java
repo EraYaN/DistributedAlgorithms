@@ -8,19 +8,22 @@ package exercise1;
 import java.rmi.*;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  *
  * @author Erwin
  */
 public class Exercise1_main {
-
+    //constants
+    public static final String projectId = "Exercise1";
+    public static final int localPort = 1099;
     /**
      * @param args the command line arguments
      */
     public static void main(String[] args) throws Exception{
         // Create and install a security manager
-        
         if (System.getSecurityManager() == null) {
             System.setSecurityManager(new SecurityManager());
         }
@@ -28,6 +31,23 @@ public class Exercise1_main {
         /*if (System.getSecurityManager() == null) {
         System.setSecurityManager(new RMISecurityManager());
         }*/
+        
+        int localID = 1;
+        if (args.length > 0) {
+            try {
+                localID = Integer.parseInt(args[0]);
+            } catch (NumberFormatException e) {
+                System.err.println("Argument" + args[0] + " must be an integer [localID].");
+                System.exit(1);
+            }
+        }
+        String localHost = "localhost"; 
+        Map<Integer, Instance> allInstances = new HashMap<Integer, Instance>();
+        //TODO: Implament read from file (csv?, json?) Probably whatever is easier in java.
+        allInstances.put(1, new Instance(1,projectId,"erayan.duckdns.org",localPort));
+        allInstances.put(2, new Instance(2,projectId,"robin.something.com",localPort));       
+        
+               
         Registry rmiRegistry = null;
         Exercise1 obj = null;
         boolean exportedRMI = false;
@@ -41,16 +61,22 @@ public class Exercise1_main {
         try {  
             if(rmiRegistry!=null){
                 System.out.println("Running...");
-                obj = new Exercise1();
+                //TODO filter out the localInstance from the allInstances for the second parameter LINQ would have been nice, lambda should also be available in java 8
+                obj = new Exercise1(allInstances.get(localID),allInstances);
+                
+                System.out.format("Listening on %s.\n","port 1099");
+                
+                System.out.println("Press enter to continue...");
+                System.in.read();
+                //This actually starts sending one message to each remote.
                 new Thread(obj).start();
-                System.out.format("Listening on %s.","port 44001");
+                
             } else {                
                 System.err.println("RMI Registry not available.");
             }
         } catch (RemoteException e) {
             e.printStackTrace();
         } finally {
-            //java.rmi.registry.LocateRegistry.
             if(obj!=null)
                 UnicastRemoteObject.unexportObject(obj, true);
             if(rmiRegistry!=null && exportedRMI)
