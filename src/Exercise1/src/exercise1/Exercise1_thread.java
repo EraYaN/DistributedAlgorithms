@@ -53,6 +53,7 @@ public class Exercise1_thread implements Runnable {
             }
         }
         for (int i = 0; i < totalMessageCount; i++) {
+            System.out.format("Sending message set %d of %d.\n",i,totalMessageCount);
             for (Map.Entry<Integer, Instance> entry : remoteInstances.entrySet()) {
                 try {
                     Integer id = entry.getKey();

@@ -64,12 +64,12 @@ public class Exercise1_main {
             if(rmiRegistry!=null){
                 System.out.println("Running...");
                 localInstance = allInstances.get(localID);
-                allInstances.remove(localInstance);
+                allInstances.remove(localID);
                 obj = new Exercise1_thread(localInstance,allInstances,messageCount);
                 
                 System.out.format("Listening on port %s.\n", localPort);
                 
-                System.out.println("Press enter to continue...");
+                System.out.format("Press enter to continue to send %d messages to %d hosts...\n",messageCount,allInstances.size());
                 System.in.read();
                 //This actually starts sending one message to each remote.
                 Thread t = new Thread(obj);
