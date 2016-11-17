@@ -45,7 +45,7 @@ public class Exercise1_main {
         Map<Integer, Instance> allInstances = new HashMap<Integer, Instance>();
         //TODO: Implament read from file (csv?, json?) Probably whatever is easier in java.
         allInstances.put(1, new Instance(1,projectId,"erayan.duckdns.org",localPort));
-        //allInstances.put(2, new Instance(2,projectId,"robin.something.com",localPort));       
+        allInstances.put(2, new Instance(2,projectId,"145.94.5.237",localPort));       
         
                
         Registry rmiRegistry = null;

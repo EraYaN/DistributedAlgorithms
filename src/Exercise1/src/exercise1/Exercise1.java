@@ -29,8 +29,13 @@ public class Exercise1 extends UnicastRemoteObject
 
     public Exercise1(Instance LocalInstance, Map<Integer, Instance> RemoteInstances) throws RemoteException {
         localInstance = LocalInstance;
-        localInstance.object = this;
+        localInstance.object = (Exercise1_RMI)this;
         localInstance.host = "localhost";
+        try{
+            localInstance.Bind();
+        } catch(Exception e){            
+            e.printStackTrace();
+        }
         remoteInstances = RemoteInstances;
     }
 

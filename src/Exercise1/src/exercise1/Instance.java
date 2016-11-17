@@ -21,9 +21,9 @@ public final class Instance {
     public String host = null;
     public String project = null;
     public String name = null;
-    public UnicastRemoteObject object = null;
+    public Exercise1_RMI object = null;
     
-    public Instance(int ID, String Project, String Host, int Port, UnicastRemoteObject Object){        
+    public Instance(int ID, String Project, String Host, int Port, Exercise1_RMI Object){        
         id = ID;
         port = Port;
         host = Host;
@@ -61,17 +61,17 @@ public final class Instance {
     }
      
     public void Bind() throws RemoteException,AlreadyBoundException,MalformedURLException{
-        if(object==null)
+        if(name==null)
             FormatName();
         if(object==null)
             throw new NullPointerException("Object");
-        java.rmi.Naming.bind(name, object);        
+        java.rmi.Naming.rebind(name, object);
     }
     
     public void Lookup() throws RemoteException,NotBoundException,MalformedURLException{
         if(name==null)
             FormatName();
-        object = (UnicastRemoteObject)java.rmi.Naming.lookup(name);        
+        object = (Exercise1_RMI)java.rmi.Naming.lookup(name);        
     }
     
     public boolean HasObject(){
