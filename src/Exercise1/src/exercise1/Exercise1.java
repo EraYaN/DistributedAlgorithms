@@ -5,6 +5,7 @@
  */
 package exercise1;
 
+import java.rmi.*;
 import java.rmi.server.UnicastRemoteObject;
 
 /**
@@ -12,8 +13,26 @@ import java.rmi.server.UnicastRemoteObject;
  * @author Erwin
  */
 public class Exercise1 extends UnicastRemoteObject
-implements Exercise1_RMI{
+implements Exercise1_RMI, Runnable{
+    public Exercise1() throws RemoteException{        
+    
+    }
+    
+    @Override
     public void rxPacket(double t){        
         System.out.format("Received packet: %f",t);
+    }
+    
+    @Override
+    public void run(){
+        try{
+            java.rmi.Naming.bind("rmi://127.0.0.1:44001/Exercise1", this);
+            System.in.read();
+            Exercise1 object = (Exercise1)java.rmi.Naming.lookup("rmi://145.94.234.147:44002/Exercise1");
+            object.rxPacket(1.0);
+        } catch(Exception e){            
+            e.printStackTrace();
+        }
+        
     }
 }
