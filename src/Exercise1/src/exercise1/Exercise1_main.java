@@ -19,6 +19,7 @@ public class Exercise1_main {
     //constants
     public static final String projectId = "Exercise1";
     public static final int localPort = 32516;
+    public static final int messageCount = 50;
     /**
      * @param args the command line arguments
      */
@@ -62,15 +63,18 @@ public class Exercise1_main {
             if(rmiRegistry!=null){
                 System.out.println("Running...");
                 //TODO filter out the localInstance from the allInstances for the second parameter LINQ would have been nice, lambda should also be available in java 8
-                obj = new Exercise1_thread(allInstances.get(localID),allInstances);
+                obj = new Exercise1_thread(allInstances.get(localID),allInstances,messageCount);
                 
                 System.out.format("Listening on port %s.\n", localPort);
                 
                 System.out.println("Press enter to continue...");
                 System.in.read();
                 //This actually starts sending one message to each remote.
-                new Thread(obj).start();
-                
+                Thread t = new Thread(obj);
+                t.start();
+                t.join();
+                System.out.println("Exiting...");
+                System.exit(0);
             } else {                
                 System.err.println("RMI Registry not available.");
             }

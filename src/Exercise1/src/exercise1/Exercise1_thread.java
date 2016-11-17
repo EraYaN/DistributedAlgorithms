@@ -15,17 +15,19 @@ import java.util.Random;
  *
  * @author Erwin
  */
-public class Exercise1_thread implements Runnable{
-    
+public class Exercise1_thread implements Runnable {
+
     Instance localInstance;
     Map<Integer, Instance> remoteInstances;
-    Exercise1 ex; 
-    
+    Exercise1 ex;
+
+    int totalMessageCount;
     private static final int maxDelay = 1000;
-    
-    public Exercise1_thread(Instance LocalInstance, Map<Integer, Instance> RemoteInstances) throws RemoteException {
+
+    public Exercise1_thread(Instance LocalInstance, Map<Integer, Instance> RemoteInstances, int TotalMessageCount) throws RemoteException {
+        totalMessageCount = TotalMessageCount;
         localInstance = LocalInstance;
-        localInstance.object = ex = new Exercise1(localInstance.id,RemoteInstances.size());
+        localInstance.object = ex = new Exercise1(localInstance.id, RemoteInstances.size(), totalMessageCount);
         localInstance.host = "localhost";
         try {
             localInstance.Bind();
@@ -33,59 +35,61 @@ public class Exercise1_thread implements Runnable{
             e.printStackTrace();
         }
         remoteInstances = RemoteInstances;
-    }    
-    
+    }
+
     @Override
     public void run() {
         for (Instance remoteInstance : remoteInstances.values()) {
-            try {                
+            try {
                 if (!remoteInstance.HasObject()) {
                     if (remoteInstance.host != "localhost") {
                         remoteInstance.Lookup();
                     } else {
                         remoteInstance.Bind();
                     }
-                }                
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        for (Map.Entry<Integer, Instance> entry : remoteInstances.entrySet()) {
-            try {
-                Integer id = entry.getKey();
-                Instance remoteInstance = entry.getValue();
-                
-                Random rand = new Random();
-                int delay = rand.nextInt(maxDelay);
-                Thread.sleep(delay);
-
-                long timestamp = (new Date()).getTime();
-
-                Message m = new Message(localInstance.id, id, timestamp, localInstance.object);
-
-                //TODO make object hang until connected.
-                if (remoteInstance.HasObject()) {
-                    try{
-                    ((Exercise1_RMI) remoteInstance.object).rxMessage(m);
-                    } catch(NoSuchObjectException nsoe){ 
-                        remoteInstance.Lookup();
-                        ((Exercise1_RMI) remoteInstance.object).rxMessage(m);
-                    }
-                    System.out.format("Sent packet to %d.\n", id);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-            }            
-        }
-        
-        while(ex.acknowledgements < remoteInstances.size()){
-            try{
-                Thread.sleep(25); 
-            } catch(Exception e){
-                e.printStackTrace();            
             }
         }
-        System.out.println("Done.");  
+        for (int i = 0; i < totalMessageCount; i++) {
+            for (Map.Entry<Integer, Instance> entry : remoteInstances.entrySet()) {
+                try {
+                    Integer id = entry.getKey();
+                    Instance remoteInstance = entry.getValue();
+
+                    Random rand = new Random();
+                    int delay = rand.nextInt(maxDelay);
+                    Thread.sleep(delay);
+
+                    long timestamp = (new Date()).getTime();
+
+                    Message m = new Message(localInstance.id, id, timestamp, localInstance.object);
+
+                    //TODO make object hang until connected.
+                    if (remoteInstance.HasObject()) {
+                        try {
+                            ((Exercise1_RMI) remoteInstance.object).rxMessage(m);
+                        } catch (NoSuchObjectException nsoe) {
+                            remoteInstance.Lookup();
+                            ((Exercise1_RMI) remoteInstance.object).rxMessage(m);
+                        }
+                        System.out.format("Sent packet to %d.\n", id);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        while (ex.acknowledgements < remoteInstances.size() || ex.packetsReceived < remoteInstances.size()) {
+            try {
+                Thread.sleep(25);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        System.out.println("Done.");
 
     }
 }
