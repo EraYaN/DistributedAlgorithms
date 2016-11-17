@@ -16,33 +16,20 @@ import java.util.Random;
  *
  * @author Erwin
  */
-public class Exercise1 extends UnicastRemoteObject
-        implements Exercise1_RMI, Runnable {
-
+public class Exercise1 extends UnicastRemoteObject implements Exercise1_RMI {
+    
     Instance localInstance;
     Map<Integer, Instance> remoteInstances;
-    int acknowledgements = 0;
+    
+    public int acknowledgements = 0;
 
-    private static final long serialVersionUID = 7526471155622776147L;
-    private static final int maxDelay = 1000;
+    
     private static final SimpleDateFormat format = new SimpleDateFormat("HH:mm:ss.mmmm");
-
+       
     public Exercise1(Instance LocalInstance, Map<Integer, Instance> RemoteInstances) throws RemoteException {
-        localInstance = LocalInstance;
-        localInstance.object = (Exercise1_RMI) this;
-        localInstance.host = "localhost";
-        try {
-            localInstance.Bind();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        localInstance = LocalInstance;       
         remoteInstances = RemoteInstances;
-    }
-
-    public Exercise1(int ID, String Project, String Host, int Port, Map<Integer, Instance> RemoteInstances) throws RemoteException {
-        localInstance = new Instance(ID, Project, Host, Port, this);
-        remoteInstances = RemoteInstances;
-    }
+    }  
 
     @Override
     public void rxMessage(Message m) {
@@ -72,47 +59,5 @@ public class Exercise1 extends UnicastRemoteObject
                 System.out.format("Message sent at %s has been acknowledged by all instances\n", format.format(a.m.timestamp));
             }
         }
-    }
-
-    @Override
-    public void run() {
-        for (Map.Entry<Integer, Instance> entry : remoteInstances.entrySet()) {
-            try {
-                Integer id = entry.getKey();
-                Instance remoteInstance = entry.getValue();
-                if (!remoteInstance.HasObject()) {
-                    if (remoteInstance.host != "localhost") {
-                        remoteInstance.Lookup();
-                    } else {
-                        remoteInstance.Bind();
-                    }
-                }                
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        for (Map.Entry<Integer, Instance> entry : remoteInstances.entrySet()) {
-            try {
-                Integer id = entry.getKey();
-                Instance remoteInstance = entry.getValue();
-                
-                Random rand = new Random();
-                int delay = rand.nextInt(maxDelay);
-                Thread.sleep(delay);
-
-                long timestamp = (new Date()).getTime();
-
-                Message m = new Message(timestamp, localInstance.id);
-
-                //TODO make object hang until connected.
-                if (remoteInstance.HasObject()) {
-                    ((Exercise1_RMI) remoteInstance.object).rxMessage(m);
-                    System.out.format("Sent packet to %d.\n", id);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-
     }
 }

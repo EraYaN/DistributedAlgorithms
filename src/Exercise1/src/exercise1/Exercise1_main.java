@@ -49,7 +49,7 @@ public class Exercise1_main {
         
                
         Registry rmiRegistry = null;
-        Exercise1 obj = null;
+        Exercise1_thread obj = null;
         boolean exportedRMI = false;
         try {
             System.out.println("Starting RMI Registry...");
@@ -62,7 +62,7 @@ public class Exercise1_main {
             if(rmiRegistry!=null){
                 System.out.println("Running...");
                 //TODO filter out the localInstance from the allInstances for the second parameter LINQ would have been nice, lambda should also be available in java 8
-                obj = new Exercise1(allInstances.get(localID),allInstances);
+                obj = new Exercise1_thread(allInstances.get(localID),allInstances);
                 
                 System.out.format("Listening on port %s.\n", localPort);
                 
@@ -78,7 +78,7 @@ public class Exercise1_main {
             e.printStackTrace();
         } finally {
             if(obj!=null)
-                UnicastRemoteObject.unexportObject(obj, true);
+                UnicastRemoteObject.unexportObject(obj.ex, true);
             if(rmiRegistry!=null && exportedRMI)
                 UnicastRemoteObject.unexportObject(rmiRegistry, true);
         }               

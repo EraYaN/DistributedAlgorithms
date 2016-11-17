@@ -32,7 +32,7 @@ public final class Instance {
     }
     
     public Instance(int ID, String Project, String Host, int Port){        
-        this(ID,Project,Host,1099,null);        
+        this(ID,Project,Host,1099,null);
     }
         
     public Instance(int ID, String Project,String Host){        
