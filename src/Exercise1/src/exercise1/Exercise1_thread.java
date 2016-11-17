@@ -53,7 +53,7 @@ public class Exercise1_thread implements Runnable {
             }
         }
         for (int i = 0; i < totalMessageCount; i++) {
-            System.out.format("Sending message set %d of %d.\n",i,totalMessageCount);
+            System.out.format("Sending message set %d of %d.\n",i+1,totalMessageCount);
             for (Map.Entry<Integer, Instance> entry : remoteInstances.entrySet()) {
                 try {
                     Integer id = entry.getKey();
@@ -83,7 +83,7 @@ public class Exercise1_thread implements Runnable {
             }
         }
 
-        while (ex.acknowledgements < remoteInstances.size() || ex.packetsReceived < remoteInstances.size()) {
+        while (ex.acknowledgements < remoteInstances.size()*totalMessageCount || ex.packetsReceived < remoteInstances.size()*totalMessageCount) {
             try {
                 Thread.sleep(25);
             } catch (Exception e) {
