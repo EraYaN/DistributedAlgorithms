@@ -24,7 +24,7 @@ public class Exercise1_thread implements Runnable{
     
     public Exercise1_thread(Instance LocalInstance, Map<Integer, Instance> RemoteInstances) throws RemoteException {
         localInstance = LocalInstance;
-        localInstance.object = ex = new Exercise1(LocalInstance,RemoteInstances);
+        localInstance.object = ex = new Exercise1(localInstance.id,RemoteInstances.size());
         localInstance.host = "localhost";
         try {
             localInstance.Bind();
@@ -60,7 +60,7 @@ public class Exercise1_thread implements Runnable{
 
                 long timestamp = (new Date()).getTime();
 
-                Message m = new Message(timestamp, localInstance.id);
+                Message m = new Message(localInstance.id, id, timestamp, localInstance.object);
 
                 //TODO make object hang until connected.
                 if (remoteInstance.HasObject()) {
@@ -69,7 +69,7 @@ public class Exercise1_thread implements Runnable{
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-            }
+            }            
         }
         
         while(ex.acknowledgements != remoteInstances.size()){

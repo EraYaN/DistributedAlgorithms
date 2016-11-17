@@ -5,6 +5,7 @@
  */
 package exercise1;
 
+import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.rmi.AlreadyBoundException;
 import java.rmi.NotBoundException;
@@ -15,13 +16,14 @@ import java.rmi.server.UnicastRemoteObject;
  *
  * @author Erwin
  */
-public final class Instance {
+public final class Instance{// implements Serializable{
     public int id = 0;
     public int port = 0;
     public String host = null;
     public String project = null;
     public String name = null;
     public Exercise1_RMI object = null;
+    //private static final long serialVersionUID = 7526471155622776147L;
     
     public Instance(int ID, String Project, String Host, int Port, Exercise1_RMI Object){        
         id = ID;
