@@ -43,6 +43,7 @@ public class Exercise1_main {
             }
         }
         String localHost = "localhost"; 
+        Instance localInstance;
         Map<Integer, Instance> allInstances = new HashMap<Integer, Instance>();
         //TODO: Implament read from file (csv?, json?) Probably whatever is easier in java.
         allInstances.put(1, new Instance(1,projectId,"192.168.178.13",localPort));
@@ -62,8 +63,9 @@ public class Exercise1_main {
         try {  
             if(rmiRegistry!=null){
                 System.out.println("Running...");
-                //TODO filter out the localInstance from the allInstances for the second parameter LINQ would have been nice, lambda should also be available in java 8
-                obj = new Exercise1_thread(allInstances.get(localID),allInstances,messageCount);
+                localInstance = allInstances.get(localID);
+                allInstances.remove(localInstance);
+                obj = new Exercise1_thread(localInstance,allInstances,messageCount);
                 
                 System.out.format("Listening on port %s.\n", localPort);
                 
