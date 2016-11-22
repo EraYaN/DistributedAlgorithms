@@ -1,29 +1,17 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package exercise1;
 
 import java.rmi.*;
 import java.rmi.server.UnicastRemoteObject;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
-/**
- *
- * @author Erwin
- */
-public class Exercise1 extends UnicastRemoteObject implements Exercise1_RMI {
+class Exercise1 extends UnicastRemoteObject implements Exercise1_RMI {
 
     int localID;
     int swarmSize;
     int totalMessageCount;
-
+    
+    public int clk = 0;
     public int acknowledgements = 0;
     public int packetsReceived = 0;
-
-    private final SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss.mmmm");
 
     public Exercise1(int LocalID, int SwarmSize) throws RemoteException {
         this(LocalID, SwarmSize, 1);
@@ -37,11 +25,12 @@ public class Exercise1 extends UnicastRemoteObject implements Exercise1_RMI {
 
     @Override
     public void rxMessage(Message m) {
-        System.out.format("Received packet from %d at %s\n", m.srcID, formatter.format(m.timestamp));
-
+        System.out.format("Received packet from %d at %d\n", m.srcID, m.timestamp);
+        clk = Math.max(m.timestamp + 1, clk + 1);
+                
         try {
             Exercise1_RMI sender = m.sender;
-            Acknowledgement a = new Acknowledgement(m, (new Date()).getTime(), this);
+            Acknowledgement a = new Acknowledgement(m, clk++, this);
             if (sender != null) {
                 sender.rxAcknowledgement(a);
             } else {
@@ -61,8 +50,9 @@ public class Exercise1 extends UnicastRemoteObject implements Exercise1_RMI {
 
     @Override
     public void rxAcknowledgement(Acknowledgement a) {
-        System.out.format("Received acknowledgement for message sent at %s by %d to %d at %s\n", formatter.format(a.m.timestamp), a.m.srcID, a.m.destID, formatter.format(a.timestamp));
-
+        System.out.format("Received acknowledgement for message sent at %d by %d to %d at %d\n", a.m.timestamp, a.m.srcID, a.m.destID, a.timestamp);
+        clk = Math.max(a.timestamp + 1, clk + 1);
+        
         if (a.m.srcID == localID) {
             acknowledgements++;
 

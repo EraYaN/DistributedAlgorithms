@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package exercise1;
 
 import java.net.MalformedURLException;
@@ -15,10 +10,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.function.Consumer;
 
-/**
- *
- * @author Erwin
- */
 public class Exercise1_thread implements Runnable {
 
     Instance localInstance;
@@ -67,7 +58,7 @@ public class Exercise1_thread implements Runnable {
                     int delay = rand.nextInt(MAX_DELAY);
                     Thread.sleep(delay);
 
-                    long timestamp = (new Date()).getTime();
+                    int timestamp = ex.clk++;
 
                     Message m = new Message(localInstance.id, id, timestamp, localInstance.object);
 
