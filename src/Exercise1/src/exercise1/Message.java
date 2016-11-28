@@ -20,7 +20,7 @@ public class Message implements Serializable {
     @Override
     public int hashCode() {
         int hash = 1;
-        hash = hash * 1 + srcID;
+        hash = hash * 3 + srcID;
         hash = hash * 5 + timestamp;
         return hash;       
     }

@@ -45,13 +45,13 @@ public class Exercise1_thread implements Runnable, AcknowledgementCallback {
             e.printStackTrace();
         }
         remoteInstances = RemoteInstances;
-        rand = new Random();
+        rand = new Random(1);
         historyFile = String.format("history-%d.txt", localInstance.id);
         Path fileToDeletePath = Paths.get(historyFile);
         try {
             Files.delete(fileToDeletePath);
         } catch (NoSuchFileException nsfe) {
-            
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -121,39 +121,40 @@ public class Exercise1_thread implements Runnable, AcknowledgementCallback {
         }
     }
 
-    private void Broadcast() {        
-        try{
+    private void Broadcast() {
+        try {
             RandomDelay();
         } catch (InterruptedException e) {
-    
+
         }
         clk++;
+        int current_clock = clk;
         remoteInstances.entrySet().forEach((Map.Entry<Integer, Instance> entry) -> {
-            try {
-                Integer id = entry.getKey();
-                Instance remoteInstance = entry.getValue();
-
-                Message m = new Message(localInstance.id, id, clk, localInstance.object);
-
-                InitRemoteObject(remoteInstance);
-                
                 try {
-                    ((Exercise1_RMI) remoteInstance.object).rxMessage(m);
-                } catch (NoSuchObjectException nsoe) {
-                    System.err.format("Connect lost to %d.\n", id);
-                }
-                System.out.format("%6d: Sent packet to %d at %d.\n", m.hashCode(), id, clk);
+                    Integer id = entry.getKey();
+                    Instance remoteInstance = entry.getValue();
 
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
-        }
-        );
+                    Message m = new Message(localInstance.id, id, current_clock, localInstance.object);
+
+                    InitRemoteObject(remoteInstance);
+
+                    try {
+                        ((Exercise1_RMI) remoteInstance.object).rxMessage(m);
+                    } catch (NoSuchObjectException nsoe) {
+                        System.err.format("Connect lost to %d.\n", id);
+                    }
+                    System.out.format("%6d: Sent packet to %d at %d.\n", m.hashCode(), m.destID, m.timestamp);
+
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+            });
+        
+
     }
 
     private void BroadcastAcknowledgement(Message m) {
         remoteInstances.entrySet().forEach((Map.Entry<Integer, Instance> entry) -> {
-
             try {
                 Integer id = entry.getKey();
                 Instance remoteInstance = entry.getValue();
