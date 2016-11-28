@@ -97,7 +97,7 @@ public class Exercise1_thread implements Runnable, AcknowledgementCallback {
     private void InitRemoteObject(Instance remoteInstance) {
         try {
             if (!remoteInstance.HasObject()) {
-                if (!"localhost".equals(remoteInstance.host)) {
+                if (localInstance.id != remoteInstance.id) {
                     remoteInstance.Lookup();
                 } else {
                     remoteInstance.Bind();
@@ -121,13 +121,13 @@ public class Exercise1_thread implements Runnable, AcknowledgementCallback {
         }
     }
 
-    private void Broadcast() {
-        clk++;
+    private void Broadcast() {        
         try{
             RandomDelay();
         } catch (InterruptedException e) {
     
         }
+        clk++;
         remoteInstances.entrySet().forEach((Map.Entry<Integer, Instance> entry) -> {
             try {
                 Integer id = entry.getKey();
@@ -135,9 +135,8 @@ public class Exercise1_thread implements Runnable, AcknowledgementCallback {
 
                 Message m = new Message(localInstance.id, id, clk, localInstance.object);
 
-                if (!remoteInstance.HasObject()) {
-                    InitRemoteObject(remoteInstance);
-                }
+                InitRemoteObject(remoteInstance);
+                
                 try {
                     ((Exercise1_RMI) remoteInstance.object).rxMessage(m);
                 } catch (NoSuchObjectException nsoe) {
