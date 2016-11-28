@@ -16,4 +16,24 @@ public class Message implements Serializable {
         timestamp = Timestamp;
         sender = Sender;
     }
+    
+    @Override
+    public int hashCode() {
+        int hash = 1;
+        hash = hash * 1 + srcID;
+        hash = hash * 5 + timestamp;
+        return hash;       
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+       if (!(obj instanceof Message))
+            return false;
+        if (obj == this)
+            return true;
+
+        Message rhs = (Message) obj;
+        return this.srcID == rhs.srcID &&
+                this.timestamp == rhs.timestamp;
+    }
 }

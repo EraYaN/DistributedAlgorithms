@@ -3,6 +3,7 @@ package exercise1;
 import static com.mkyong.utils.CSVUtils.parseLine;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.rmi.*;
 import java.rmi.registry.Registry;
 import java.util.HashMap;
@@ -14,7 +15,7 @@ public class Exercise1_main {
 
     //constants
     public static final String PROJECT_ID = "Exercise1";
-    public static final int MESSAGE_COUNT = 5;
+    public static final int MESSAGE_COUNT = 1;
     public static final int AUTO_START_DELAY = 5; // seconds
     public static final String INSTANCES_FILE = "data/instances.csv";
 
@@ -93,7 +94,7 @@ public class Exercise1_main {
         try {
             if (rmiRegistry != null) {                
                 System.out.format("Running as instance %d...\n", localInstance.id);
-                allInstances.remove(localID);
+                //allInstances.remove(localID);
                 obj = new Exercise1_thread(localInstance, allInstances, MESSAGE_COUNT);
 
                 System.out.format("Listening on %s:%d.\n", localInstance.host, localInstance.port);

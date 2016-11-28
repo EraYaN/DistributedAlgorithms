@@ -8,40 +8,51 @@ class Exercise1 extends UnicastRemoteObject implements Exercise1_RMI {
     int localID;
     int swarmSize;
     int totalMessageCount;
-    
-    public int clk = 0;
+
+    MessageQueue queue;
+    AcknowledgeMap acknowledgeMap;
+    AcknowledgementCallback callBack;
+
     public int acknowledgements = 0;
     public int packetsReceived = 0;
 
-    public Exercise1(int LocalID, int SwarmSize) throws RemoteException {
-        this(LocalID, SwarmSize, 1);
+    public Exercise1(int LocalID, int SwarmSize, AcknowledgementCallback callBack) throws RemoteException {
+        this(LocalID, SwarmSize, 1, callBack);
     }
 
-    public Exercise1(int LocalID, int SwarmSize, int TotalMessageCount) throws RemoteException {
+    public Exercise1(int LocalID, int SwarmSize, int TotalMessageCount, AcknowledgementCallback CallBack) throws RemoteException {
         localID = LocalID;
         swarmSize = SwarmSize;
         totalMessageCount = TotalMessageCount;
+        queue = new MessageQueue();
+        acknowledgeMap = new AcknowledgeMap();
+        callBack = CallBack;
+    }
+
+    public int GetAcknowledgements(Message m) {
+        if (acknowledgeMap.containsKey(m.hashCode())) {
+            return acknowledgeMap.get(m.hashCode());
+        }
+        return 0;
+    }
+
+    public Message Peek() {
+        return queue.peek();
+    }
+
+    public Message Remove() {
+        return queue.remove();
     }
 
     @Override
     public void rxMessage(Message m) {
-        System.out.format("Received packet from %d at %d\n", m.srcID, m.timestamp);
-        clk = Math.max(m.timestamp + 1, clk + 1);
-                
-        try {
-            Exercise1_RMI sender = m.sender;
-            Acknowledgement a = new Acknowledgement(m, clk++, this);
-            if (sender != null) {
-                sender.rxAcknowledgement(a);
-            } else {
-                System.out.format("Packet from %d does not have an Object.\n", m.sender);
-            }
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
+        System.out.format("%6d: Received packet from %d at %d\n", m.hashCode(), m.srcID, m.timestamp);
+
+        queue.add(m);
+        callBack.acknowledgementCallback(m);
+
         if (m.destID == localID) {
             packetsReceived++;
-
             if (packetsReceived >= swarmSize * totalMessageCount) {
                 System.out.println("Messages received from the whole swarm.");
             }
@@ -50,15 +61,18 @@ class Exercise1 extends UnicastRemoteObject implements Exercise1_RMI {
 
     @Override
     public void rxAcknowledgement(Acknowledgement a) {
-        System.out.format("Received acknowledgement for message sent at %d by %d to %d at %d\n", a.m.timestamp, a.m.srcID, a.m.destID, a.timestamp);
-        clk = Math.max(a.timestamp + 1, clk + 1);
-        
-        if (a.m.srcID == localID) {
-            acknowledgements++;
+        System.out.format("%6d: Received acknowledgement for message sent at %d by %d to %d at %d\n", a.m.hashCode(), a.m.timestamp, a.m.srcID, a.m.destID, a.timestamp);
 
-            if (acknowledgements >= swarmSize * totalMessageCount) {
-                System.out.println("Message acknowledgements received from the whole swarm.");
-            }
+        acknowledgements++;
+
+        if (acknowledgeMap.containsKey(a.m.hashCode())) {
+            acknowledgeMap.put(a.m.hashCode(), acknowledgeMap.get(a.m.hashCode()) + 1);
+        } else {
+            acknowledgeMap.put(a.m.hashCode(), 1);
+        }
+
+        if (acknowledgements >= swarmSize * swarmSize * totalMessageCount) {
+            System.out.println("Message acknowledgements received from the whole swarm.");
         }
     }
 }

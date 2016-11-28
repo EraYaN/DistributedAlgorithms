@@ -1,20 +1,35 @@
 package exercise1;
 
+import java.io.BufferedWriter;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.net.MalformedURLException;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.rmi.AlreadyBoundException;
 import java.rmi.NoSuchObjectException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
-import java.util.Date;
 import java.util.Map;
 import java.util.Random;
-import java.util.function.Consumer;
 
-public class Exercise1_thread implements Runnable {
+public class Exercise1_thread implements Runnable, AcknowledgementCallback {
 
     Instance localInstance;
     Map<Integer, Instance> remoteInstances;
     Exercise1 ex;
+
+    Random rand;
+
+    int delivered = 0;
+
+    int clk = 0;
+
+    String historyFile;
 
     int totalMessageCount;
     private static final int MAX_DELAY = 1000;
@@ -22,7 +37,7 @@ public class Exercise1_thread implements Runnable {
     public Exercise1_thread(Instance LocalInstance, Map<Integer, Instance> RemoteInstances, int TotalMessageCount) throws RemoteException {
         totalMessageCount = TotalMessageCount;
         localInstance = LocalInstance;
-        localInstance.object = ex = new Exercise1(localInstance.id, RemoteInstances.size(), totalMessageCount);
+        localInstance.object = ex = new Exercise1(localInstance.id, RemoteInstances.size(), totalMessageCount, this);
         localInstance.host = "localhost";
         try {
             localInstance.Bind();
@@ -30,57 +45,32 @@ public class Exercise1_thread implements Runnable {
             e.printStackTrace();
         }
         remoteInstances = RemoteInstances;
+        rand = new Random();
+        historyFile = String.format("history-%d.txt", localInstance.id);
+        Path fileToDeletePath = Paths.get(historyFile);
+        try {
+            Files.delete(fileToDeletePath);
+        } catch (NoSuchFileException nsfe) {
+            
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void run() {
-        remoteInstances.values().forEach((remoteInstance) -> {
-            try {
-                if (!remoteInstance.HasObject()) {
-                    if (!"localhost".equals(remoteInstance.host)) {
-                        remoteInstance.Lookup();
-                    } else {
-                        remoteInstance.Bind();
-                    }
-                }
-            } catch (MalformedURLException | AlreadyBoundException | NotBoundException | RemoteException e) {                
-                e.printStackTrace();
-            }
-        });
         for (int i = 0; i < totalMessageCount; i++) {
             System.out.format("Sending message set %d of %d.\n", i + 1, totalMessageCount);
-            remoteInstances.entrySet().forEach((Map.Entry<Integer, Instance> entry) -> {
-                try {
-                    Integer id = entry.getKey();
-                    Instance remoteInstance = entry.getValue();
 
-                    Random rand = new Random();
-                    int delay = rand.nextInt(MAX_DELAY);
-                    Thread.sleep(delay);
+            CheckAndDeliver();
 
-                    int timestamp = ex.clk++;
-
-                    Message m = new Message(localInstance.id, id, timestamp, localInstance.object);
-
-                    //TODO make object hang until connected.
-                    if (remoteInstance.HasObject()) {
-                        try {
-                            ((Exercise1_RMI) remoteInstance.object).rxMessage(m);
-                        } catch (NoSuchObjectException nsoe) {
-                            System.err.format("Need to do reconnect for %d.\n", id);
-                            remoteInstance.Lookup();
-                            ((Exercise1_RMI) remoteInstance.object).rxMessage(m);
-                        }
-                        System.out.format("Sent packet to %d.\n", id);
-                    }
-                } catch (InterruptedException | MalformedURLException | NotBoundException | RemoteException e) {
-                    e.printStackTrace();
-                }
-            });
+            Broadcast();
         }
 
-        while (ex.acknowledgements < remoteInstances.size() * totalMessageCount || ex.packetsReceived < remoteInstances.size() * totalMessageCount) {
+        while (ex.acknowledgements < remoteInstances.size() * remoteInstances.size() * totalMessageCount || ex.packetsReceived < remoteInstances.size() * totalMessageCount || delivered < totalMessageCount * remoteInstances.size()) {
             try {
+                CheckAndDeliver();
+
                 Thread.sleep(25);
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -88,5 +78,109 @@ public class Exercise1_thread implements Runnable {
         }
         System.out.println("Done.");
 
+    }
+
+    private void RandomDelay() throws InterruptedException {
+        Thread.sleep(rand.nextInt(MAX_DELAY));
+    }
+
+    private void CheckAndDeliver() {
+        Message m = ex.Peek();
+        if (m == null) {
+            return;
+        }
+        if (ex.GetAcknowledgements(m) >= remoteInstances.size()) {
+            Deliver();
+        }
+    }
+
+    private void InitRemoteObject(Instance remoteInstance) {
+        try {
+            if (!remoteInstance.HasObject()) {
+                if (!"localhost".equals(remoteInstance.host)) {
+                    remoteInstance.Lookup();
+                } else {
+                    remoteInstance.Bind();
+                }
+            }
+        } catch (MalformedURLException | AlreadyBoundException | NotBoundException | RemoteException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void Deliver() {
+        delivered++;
+        Message m = ex.Remove();
+        System.out.format("%6d: Delivered message received from %d at %d.\n", m.hashCode(), m.srcID, m.timestamp);
+
+        try (Writer writer = new BufferedWriter(new OutputStreamWriter(
+                new FileOutputStream(historyFile, true), "utf-8"))) {
+            writer.write(String.format("hashCode: %6d; Timestamp: %3d; Src: %3d; Dest: %3d\n", m.hashCode(), m.timestamp, m.srcID, m.destID));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void Broadcast() {
+        clk++;
+        try{
+            RandomDelay();
+        } catch (InterruptedException e) {
+    
+        }
+        remoteInstances.entrySet().forEach((Map.Entry<Integer, Instance> entry) -> {
+            try {
+                Integer id = entry.getKey();
+                Instance remoteInstance = entry.getValue();
+
+                Message m = new Message(localInstance.id, id, clk, localInstance.object);
+
+                if (!remoteInstance.HasObject()) {
+                    InitRemoteObject(remoteInstance);
+                }
+                try {
+                    ((Exercise1_RMI) remoteInstance.object).rxMessage(m);
+                } catch (NoSuchObjectException nsoe) {
+                    System.err.format("Connect lost to %d.\n", id);
+                }
+                System.out.format("%6d: Sent packet to %d at %d.\n", m.hashCode(), id, clk);
+
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        }
+        );
+    }
+
+    private void BroadcastAcknowledgement(Message m) {
+        remoteInstances.entrySet().forEach((Map.Entry<Integer, Instance> entry) -> {
+
+            try {
+                Integer id = entry.getKey();
+                Instance remoteInstance = entry.getValue();
+
+                Acknowledgement a = new Acknowledgement(m, clk, ex);
+
+                if (!remoteInstance.HasObject()) {
+                    InitRemoteObject(remoteInstance);
+                }
+                try {
+                    ((Exercise1_RMI) remoteInstance.object).rxAcknowledgement(a);
+                } catch (NoSuchObjectException nsoe) {
+                    System.err.format("Connect lost to %d.\n", id);
+                }
+                System.out.format("%6d: Sent acknowledgement for message to %d at %d.\n", m.hashCode(), id, clk);
+
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        }
+        );
+    }
+
+    @Override
+    public void acknowledgementCallback(Message m) {
+        clk = Math.max(m.timestamp + 1, clk + 1);
+        BroadcastAcknowledgement(m);
     }
 }
