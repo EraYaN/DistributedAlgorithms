@@ -15,7 +15,9 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
 
     boolean granted = false;
     boolean postponed = false;
-    Request current_grant;
+    boolean inquiring = false;
+    Request currentGrant;
+    Inquire currentInquire;
     int numGrants = 0;
 
     InstanceIDArrayList requestGroup;
@@ -110,7 +112,23 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
         InitRemoteObject(dest);
         Postponed p = new Postponed(localID, clk, r);
         ((Exercise2_RMI) dest.object).rxPostponed(p);
-        System.out.format("%6d: Sent postponed to %d at %d for request %d sent from %d at %d.\n", p.hashCode(), p.srcID, p.timestamp, r.hashCode(), r.srcID, r.timestamp);
+        System.out.format("%6d: Sent postponed to %d at %d for request %d at %d.\n", p.hashCode(), r.srcID, p.timestamp, r.hashCode(), r.timestamp);
+    }
+
+    public void txInquire(Request r) throws RemoteException {
+        Instance dest = lookupCallBack.LookupInstance(r.srcID);
+        InitRemoteObject(dest);
+        Inquire i = new Inquire(localID, clk, r);
+        ((Exercise2_RMI) dest.object).rxInquire(i);
+        System.out.format("%6d: Sent inquire to %d at %d for request %d sent at %d.\n", i.hashCode(), r.srcID, i.timestamp, r.hashCode(), r.timestamp);
+    }
+
+    public void txRelinquish(Inquire i) throws RemoteException {
+        Instance dest = lookupCallBack.LookupInstance(i.srcID);
+        InitRemoteObject(dest);
+        Relinquish r = new Relinquish(localID, clk, i);
+        ((Exercise2_RMI) dest.object).rxRelinquish(r);
+        System.out.format("%6d: Sent relinquish to %d at %d for inquire %d sent at %d.\n", r.hashCode(), i.srcID, r.timestamp, i.hashCode(), i.timestamp);
     }
 
     private void CriticalSection() throws InterruptedException {
@@ -128,15 +146,19 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
     public void rxRequest(Request r) throws RemoteException {
         System.out.format("%6d: Received request from %d at %d.\n", r.hashCode(), r.srcID, r.timestamp);
         UpdateClk(r.timestamp);
+
         if (!granted) {
-            current_grant = r;
+            currentGrant = r;
             txGrant(r);
             granted = true;
         } else {
             requestQueue.add(r);
             Request head = requestQueue.peek();
-            if (current_grant.compareTo(r) < 0 || head.compareTo(r) < 0) {
-
+            if (currentGrant.compareTo(r) < 0 || head.compareTo(r) < 0) {
+                txPostponed(r);
+            } else if (!inquiring) {
+                inquiring = true;
+                txInquire(currentGrant);
             }
         }
     }
@@ -145,6 +167,7 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
     public void rxGrant(Grant g) {
         System.out.format("%6d: Received grant from %d at %d for request %d sent from %d at %d.\n", g.hashCode(), g.srcID, g.timestamp, g.r.hashCode(), g.r.srcID, g.r.timestamp);
         UpdateClk(g.timestamp);
+
         numGrants++;
         if (numGrants == requestGroup.size()) {
             postponed = false;
@@ -162,14 +185,55 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
         System.out.format("%6d: Received release from %d at %d.\n", r.hashCode(), r.srcID, r.timestamp);
         UpdateClk(r.timestamp);
         granted = false;
-        current_grant = null;
+        inquiring = false;
+
+        if (!requestQueue.isEmpty()) {
+            currentGrant = requestQueue.peek();
+            txGrant(currentGrant);
+            granted = true;
+        } else {
+            currentGrant = null;
+        }
+
         releases++;
     }
 
     @Override
     public void rxPostponed(Postponed p) throws RemoteException {
-        System.out.format("%6d: Received grant from %d at %d for request %d sent from %d at %d.\n", p.hashCode(), p.srcID, p.timestamp, p.r.hashCode(), p.r.srcID, p.r.timestamp);
+        System.out.format("%6d: Received grant from %d at %d for request %d sent at %d.\n", p.hashCode(), p.srcID, p.timestamp, p.r.hashCode(), p.r.timestamp);
+        UpdateClk(p.timestamp);
+
         postponed = true;
+        if (currentInquire != null) {
+            numGrants--;
+            txRelinquish(currentInquire);
+            currentInquire = null;
+        }
     }
 
+    @Override
+    public void rxInquire(Inquire i) throws RemoteException {
+        System.out.format("%6d: Received inquire from %d at %d for request %d sent at %d.\n", i.hashCode(), i.srcID, i.timestamp, i.r.hashCode(), i.r.timestamp);
+        UpdateClk(i.timestamp);
+
+        if (postponed) {
+            numGrants--;
+            txRelinquish(i);
+        } else {
+            currentInquire = i;
+        }
+    }
+
+    @Override
+    public void rxRelinquish(Relinquish r) throws RemoteException {
+        System.out.format("%6d: Received relinquish from %d at %d for inquire %d sent at %d.\n", r.hashCode(), r.srcID, r.timestamp, r.i.hashCode(), r.i.timestamp);
+        UpdateClk(r.timestamp);
+
+        inquiring = false;
+        granted = false;
+        requestQueue.add(r.i.r);
+        currentGrant = requestQueue.peek();
+        granted = true;
+        txGrant(currentGrant);
+    }
 }
