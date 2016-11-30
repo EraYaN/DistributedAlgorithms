@@ -4,3 +4,5 @@
 /src/Exercise1/data/instances.csv
 src/Exercise1/history*.txt
 /src/Exercise2/nbproject/private/
+/src/Exercise2/build/
+/src/Exercise2/dist/

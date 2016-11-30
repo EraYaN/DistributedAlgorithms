@@ -4,7 +4,11 @@ import java.rmi.Remote;
 
 public interface Exercise2_RMI extends Remote {
 
-    public void rxMessage(Message m) throws java.rmi.RemoteException;
+    public void rxRequest(Request r) throws java.rmi.RemoteException;
 
-    public void rxAcknowledgement(Acknowledgement a) throws java.rmi.RemoteException;
+    public void rxGrant(Grant g) throws java.rmi.RemoteException;
+
+    public void rxRelease(Release r) throws java.rmi.RemoteException;
+
+    public void rxPostponed(Postponed p) throws java.rmi.RemoteException;
 }

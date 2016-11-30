@@ -12,19 +12,25 @@ public final class Instance {// implements Serializable{
     public String host = null;
     public String project = null;
     public String name = null;
+    public InstanceIDArrayList requestGroup;
     public Exercise2_RMI object = null;
     //private static final long serialVersionUID = 7526471155622776147L;
 
-    public Instance(int ID, String Project, String Host, int Port, Exercise2_RMI Object) {
+    public Instance(int ID, String Project, String Host, int Port, InstanceIDArrayList RequestGroup, Exercise2_RMI Object) {
         id = ID;
         port = Port;
         host = Host;
         project = Project;
+        requestGroup = RequestGroup;
         object = Object;
     }
 
+    public Instance(int ID, String Project, String Host, int Port, InstanceIDArrayList RequestGroup) {
+        this(ID, Project, Host, Port, RequestGroup, null);
+    }
+
     public Instance(int ID, String Project, String Host, int Port) {
-        this(ID, Project, Host, Port, null);
+        this(ID, Project, Host, Port, new InstanceIDArrayList());
     }
 
     public Instance(int ID, String Project, String Host) {

@@ -1,3 +1,8 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
 package exercise2;
 
 import java.util.Comparator;
@@ -6,10 +11,10 @@ import java.util.Comparator;
  *
  * @author Erwin
  */
-public class MessageComparator implements Comparator<Message> {
+public class RequestComparator implements Comparator<Request> {
 
     @Override
-    public int compare(Message m1, Message m2) {
+    public int compare(Request m1, Request m2) {
         if (m1 == m2) {
             return 0;
         }

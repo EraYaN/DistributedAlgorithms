@@ -15,7 +15,7 @@ public class Exercise2_main {
 
     //constants
     public static final String PROJECT_ID = "Exercise2";
-    public static final int MESSAGE_COUNT = 5;
+    public static final int MESSAGE_COUNT = 1;
     public static final int AUTO_START_DELAY = 5; // seconds
     public static final String INSTANCES_FILE = "data/instances.csv";
 
@@ -33,18 +33,26 @@ public class Exercise2_main {
         System.setSecurityManager(new RMISecurityManager());
         }*/
 
-        Map<Integer, Instance> allInstances = new HashMap<>();
+        InstanceMap allInstances = new InstanceMap();
+
+        InstanceIDArrayList requestGroup;
 
         try {
             Scanner scanner = new Scanner(new File(INSTANCES_FILE));
             while (scanner.hasNext()) {
                 List<String> line = parseLine(scanner.nextLine());
+                requestGroup = new InstanceIDArrayList();
                 try {
                     int id = Integer.parseInt(line.get(0));
                     String host = line.get(1);
                     int port = Integer.parseInt(line.get(2));
-                    allInstances.put(id, new Instance(id, PROJECT_ID, host, port));
-                    System.out.println("Instance [id= " + line.get(0) + ", host= " + line.get(1) + " , port=" + line.get(2) + "]");
+                    String requestGroupString = line.get(3);
+                    String[] requestGroupArray = requestGroupString.split(";");
+                    for (String v : requestGroupArray) {
+                        requestGroup.add(Integer.parseInt(v));
+                    }
+                    allInstances.put(id, new Instance(id, PROJECT_ID, host, port, requestGroup));
+                    System.out.println("Instance [id= " + line.get(0) + ", host= " + line.get(1) + " , port=" + line.get(2) + ", requestGroup=" + line.get(3) + "]");
                 } catch (NumberFormatException e) {
                     System.err.format("While parsing line \'%s\' a format occured.\n", line);
                     System.exit(1);
@@ -92,24 +100,26 @@ public class Exercise2_main {
             rmiRegistry = java.rmi.registry.LocateRegistry.getRegistry(localInstance.port);
         }
         try {
-            if (rmiRegistry != null) {                
+            if (rmiRegistry != null) {
                 System.out.format("Running as instance %d...\n", localInstance.id);
-                //allInstances.remove(localID);
+                allInstances.remove(localID);
                 obj = new Exercise2_thread(localInstance, allInstances, MESSAGE_COUNT);
 
                 System.out.format("Listening on %s:%d.\n", localInstance.host, localInstance.port);
 
                 if (!autoStarting) {
-                    System.out.format("Press enter to continue to send %d messages to %d hosts...\n", MESSAGE_COUNT, allInstances.size());
+                    System.out.format("Press enter to continue to send %d requests to %d hosts...\n", MESSAGE_COUNT, allInstances.size());
                     System.in.read();
                 } else {
-                    System.out.format("Waiting %d seconds to send %d messages to %d hosts...\n", AUTO_START_DELAY, MESSAGE_COUNT, allInstances.size());
+                    System.out.format("Waiting %d seconds to send %d requests to %d hosts...\n", AUTO_START_DELAY, MESSAGE_COUNT, allInstances.size());
                     Thread.sleep(AUTO_START_DELAY * 1000);
                 }
                 //This actually starts sending one message to each remote.
                 Thread t = new Thread(obj);
                 t.start();
                 t.join();
+                System.out.println("Press enter to continue.");
+                System.in.read();
                 System.out.println("Exiting...");
                 System.exit(0);
             } else {
