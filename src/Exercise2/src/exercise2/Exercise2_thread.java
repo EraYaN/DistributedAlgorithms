@@ -34,6 +34,14 @@ public class Exercise2_thread implements Runnable, InstanceLookupInterface {
         totalMessageCount = TotalMessageCount;
         localInstance = LocalInstance;
         localInstance.object = ex = new Exercise2(localInstance.id, RemoteInstances.size(), totalMessageCount, this, localInstance.requestGroup);
+        Path fileToDeletePath = Paths.get(ex.criticalFile);
+        try {
+            Files.delete(fileToDeletePath);
+        } catch (NoSuchFileException nsfe) {
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         localInstance.host = "localhost";
         try {
             localInstance.Bind();
@@ -44,7 +52,7 @@ public class Exercise2_thread implements Runnable, InstanceLookupInterface {
         rand = new Random();
         historyFile = String.format("history-%d.txt", localInstance.id);
         logFile = String.format("log-%d.txt", localInstance.id);
-        Path fileToDeletePath = Paths.get(historyFile);
+        fileToDeletePath = Paths.get(historyFile);
         try {
             Files.delete(fileToDeletePath);
         } catch (NoSuchFileException nsfe) {
@@ -70,7 +78,12 @@ public class Exercise2_thread implements Runnable, InstanceLookupInterface {
     }
 
     private void PrintStatusMessage(String prefix) {
-        System.out.format("%sClk: %d; In Queue: %d; Queue Head: %d@%d; Granted to: %d; Owned Grants: %d\n", prefix, ex.clk, ex.requestQueue.size(), ex.requestQueue.peek() != null ? ex.requestQueue.peek().srcID : 0, ex.requestQueue.peek() != null ? ex.requestQueue.peek().timestamp : 0, ex.granted ? ex.currentGrant.srcID : 0, ex.numGrants);
+        System.out.format("%sClk: %d; In Queue: %d; Queue Head: %d@%d; Current Grant: %d@%d; Owned Grants: %d; Crit Sec: %d; rxReleases: %d\n",
+                prefix, ex.clk, ex.requestQueue.size(), ex.requestQueue.peek() != null ? ex.requestQueue.peek().srcID : 0,
+                ex.requestQueue.peek() != null ? ex.requestQueue.peek().timestamp : 0, 
+                ex.granted ? ex.currentGrant.srcID : 0,
+                ex.granted ? ex.currentGrant.timestamp : 0,
+                ex.numGrants, ex.criticalSections, ex.rxReleases);
     }
 
     @Override
@@ -85,25 +98,32 @@ public class Exercise2_thread implements Runnable, InstanceLookupInterface {
                 try {
                     ex.CheckGrants();
                     PrintStatusMessage("[F] ");
-                    Thread.sleep(5000);
+                    Thread.sleep(1000);
                 } catch (InterruptedException intex) {
                     intex.printStackTrace();
                 }
             }
         }
-        while (ex.criticalSections < totalMessageCount || ex.rxReleases < totalMessageCount * localInstance.requestGroup.size()) {
+        while (ex.criticalSections < totalMessageCount || ex.rxReleases < totalMessageCount * localInstance.requestGroup.size() || ex.requestQueue.size() > 0) {
             try {
                 //System.out.print('.');
-                ex.CheckGrants();
+                //ex.CheckGrants();
                 PrintStatusMessage("[W] ");
                 DumpLog();
-                Thread.sleep(5000);
+                Thread.sleep(1000);
 
             } catch (InterruptedException intex) {
                 intex.printStackTrace();
-            //} catch (RemoteException ex) {
-            //    ex.printStackTrace();
+                //} catch (RemoteException ex) {
+                //    ex.printStackTrace();
             }
+        }
+        
+        PrintStatusMessage("[Final] ");
+        try {
+            Thread.sleep(1000); //Grace period
+        } catch (InterruptedException intex) {
+            intex.printStackTrace();
         }
         ex.log.add("Done.\n");
     }

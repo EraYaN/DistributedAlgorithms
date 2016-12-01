@@ -12,7 +12,7 @@ public class Exercise2_main {
 
     //constants
     public static final String PROJECT_ID = "Exercise2";
-    public static final int MESSAGE_COUNT = 2;
+    public static final int MESSAGE_COUNT = 10;
     public static final int AUTO_START_DELAY = 3; // seconds
     public static final String INSTANCES_FILE = "data/instances.csv";
 
