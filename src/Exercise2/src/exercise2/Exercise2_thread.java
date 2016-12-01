@@ -12,10 +12,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.rmi.AlreadyBoundException;
 import java.rmi.RemoteException;
-import java.util.Date;
 import java.util.Random;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class Exercise2_thread implements Runnable, InstanceLookupInterface {
 
@@ -68,6 +65,14 @@ public class Exercise2_thread implements Runnable, InstanceLookupInterface {
         }
     }
 
+    private void PrintStatusMessage() {
+        PrintStatusMessage("");
+    }
+
+    private void PrintStatusMessage(String prefix) {
+        System.out.format("%sClk: %d; In Queue: %d; Queue Head: %d@%d; Granted to: %d; Owned Grants: %d\n", prefix, ex.clk, ex.requestQueue.size(), ex.requestQueue.peek() != null ? ex.requestQueue.peek().srcID : 0, ex.requestQueue.peek() != null ? ex.requestQueue.peek().timestamp : 0, ex.granted ? ex.currentGrant.srcID : 0, ex.numGrants);
+    }
+
     @Override
     public void run() {
         for (int i = 0; i < totalMessageCount; i++) {
@@ -76,24 +81,28 @@ public class Exercise2_thread implements Runnable, InstanceLookupInterface {
             BroadcastRequest();
             DumpLog();
             ex.log.add(String.format("Sent message set %d of %d.\n", i + 1, totalMessageCount));
-            
-            while(ex.criticalSections <= i) {
+            while (ex.criticalSections <= i) {
                 try {
-                    Thread.sleep(150);
-                } catch (InterruptedException ex) {
-                    ex.printStackTrace();
+                    ex.CheckGrants();
+                    PrintStatusMessage("[F] ");
+                    Thread.sleep(5000);
+                } catch (InterruptedException intex) {
+                    intex.printStackTrace();
                 }
             }
         }
         while (ex.criticalSections < totalMessageCount || ex.rxReleases < totalMessageCount * localInstance.requestGroup.size()) {
             try {
-                System.out.print('.');
-                System.out.format("%d", ex.granted ? 1 : 0);
+                //System.out.print('.');
+                ex.CheckGrants();
+                PrintStatusMessage("[W] ");
                 DumpLog();
-                Thread.sleep(250);
+                Thread.sleep(5000);
 
-            } catch (InterruptedException ex) {
-                ex.printStackTrace();
+            } catch (InterruptedException intex) {
+                intex.printStackTrace();
+            //} catch (RemoteException ex) {
+            //    ex.printStackTrace();
             }
         }
         ex.log.add("Done.\n");

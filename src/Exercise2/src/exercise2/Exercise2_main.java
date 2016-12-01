@@ -3,12 +3,9 @@ package exercise2;
 import static com.mkyong.utils.CSVUtils.parseLine;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.NoSuchFileException;
 import java.rmi.*;
 import java.rmi.registry.Registry;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
 
 public class Exercise2_main {
@@ -16,10 +13,10 @@ public class Exercise2_main {
     //constants
     public static final String PROJECT_ID = "Exercise2";
     public static final int MESSAGE_COUNT = 2;
-    public static final int AUTO_START_DELAY = 5; // seconds
+    public static final int AUTO_START_DELAY = 3; // seconds
     public static final String INSTANCES_FILE = "data/instances.csv";
 
-    /**
+   /**
      * @param args the command line arguments
      * @throws java.lang.Exception
      */
@@ -90,7 +87,8 @@ public class Exercise2_main {
         }
 
         final Instance localInstance = allInstances.get(localID);
-
+        
+        
         Registry rmiRegistry;
         Exercise2_thread obj;
         try {
@@ -114,7 +112,7 @@ public class Exercise2_main {
                     System.out.format("Waiting %d seconds to send %d requests to %d hosts...\n", AUTO_START_DELAY, MESSAGE_COUNT, allInstances.size());
                     Thread.sleep(AUTO_START_DELAY * 1000);
                 }
-                //This actually starts sending one message to each remote.
+                //This actually starts sending the requests
                 Thread t = new Thread(obj);
                 t.start();
                 t.join();

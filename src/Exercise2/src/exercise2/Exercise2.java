@@ -3,6 +3,7 @@ package exercise2;
 import java.net.MalformedURLException;
 import java.rmi.*;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.HashMap;
 
 class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
 
@@ -10,11 +11,12 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
     int swarmSize;
     int totalMessageCount;
 
-    boolean granted = false;
-    boolean postponed = false;
-    boolean inquiring = false;
+    volatile boolean granted = false;
+    volatile boolean postponed = false;
+    volatile boolean inquiring = false;
+    volatile boolean busy = false;
     Request currentGrant;
-    int numGrants = 0;
+    volatile int numGrants;
 
     InstanceIDArrayList requestGroup;
 
@@ -55,10 +57,9 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
     }
 
     public void txRequest() {
-        numGrants = 0;
-        int tempClk = clk;
+        //numGrants = 0;         
         clk++;
-        
+        int tempClk = clk;
         requestGroup.forEach((Integer id) -> {
             try {
                 Instance remoteInstance = lookupCallBack.LookupInstance(id);
@@ -80,10 +81,9 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
         });
     }
 
-    public void txRelease() {
-        int tempClk = clk;
+    public void txRelease() {        
         clk++;
-        
+        int tempClk = clk;
         requestGroup.forEach((Integer id) -> {
             try {
                 Instance remoteInstance = lookupCallBack.LookupInstance(id);
@@ -137,14 +137,14 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
         log.add(String.format("%6d: Sent relinquish to %d at %d for inquire %d sent at %d.\n", r.hashCode(), i.srcID, r.timestamp, i.hashCode(), i.timestamp));
     }
 
-    private void CriticalSection() throws InterruptedException {
-        log.add(String.format("Entered critical section at %d.\n", clk));
+    private void CriticalSection(int id) throws InterruptedException {
+        log.add(String.format("Entered critical section for request %d at %d.\n", id, clk));
         for (int i = 0; i < 10; i++) {
             Thread.sleep(125);
-            log.add(String.format("Processing %d out of %d at %d.\n", i, 10, clk));
+            log.add(String.format("Processing %d out of %d at %d for %d.\n", i, 10, clk, id));
             Thread.sleep(125);
         }
-        log.add(String.format("Stopped critical section at %d.\n", clk));
+        log.add(String.format("Stopped critical section for request %d at %d.\n", id, clk));
         criticalSections++;
     }
 
@@ -163,13 +163,57 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
 //        }
 //        //}
 //    }
+    
+    public void Patchwork() throws RemoteException {
+        CheckGrants();
+        /*if (numGrants == requestGroup.size()) {            
+            Request head = requestQueue.peek();
+            if(head.srcID!=currentGrant.srcID){  
+                Inquire i = new Inquire(localID, clk, currentGrant);
+                txRelinquish(i);
+            }
+        }*/
+    
+    }
+    
+    public void CheckGrants(){
+        if (numGrants >= requestGroup.size() && busy==false) {
+            postponed = false;
+            busy = true;
+            try {
+                CriticalSection(currentGrant.hashCode());
+            } catch (InterruptedException ex) {
+                ex.printStackTrace();
+            }
+            txRelease(); 
+            numGrants = Math.max(0,numGrants-requestGroup.size());//Don't own these anymore, used some grants.
+            log.add(String.format("Consumed %d grants from the received grants.\n", requestGroup.size()));
+            busy = false;
+        }    
+    }
+    
+    public void CheckGrants(Grant g){
+        if (numGrants >= requestGroup.size() && busy==false) {
+            postponed = false;
+            busy = true;
+            try {
+                CriticalSection(g.r.hashCode());
+            } catch (InterruptedException ex) {
+                ex.printStackTrace();
+            }
+            txRelease(); 
+            numGrants = Math.max(0,numGrants-requestGroup.size());//Don't own these anymore, used some grants.
+            log.add(String.format("%6d: Consumed %d grants from the received grants.\n", g.hashCode(), requestGroup.size()));
+            busy = false;
+        }    
+    }
 
     @Override
     public void rxRequest(Request r) throws RemoteException {
         log.add("rxRequest\n");          
         UpdateClk(r.timestamp);
 
-        if (!granted) {
+        if (!granted && !busy) {
             currentGrant = r;
             txGrant(r);
             granted = true;
@@ -194,15 +238,7 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
         UpdateClk(g.timestamp);
 
         numGrants++;
-        if (numGrants == requestGroup.size()) {
-            postponed = false;
-            try {
-                CriticalSection();
-            } catch (InterruptedException ex) {
-                ex.printStackTrace();
-            }
-            txRelease();
-        }
+        CheckGrants(g);
         log.add(String.format("%6d: Received grant from %d at %d for request %d sent from %d at %d.\n", g.hashCode(), g.srcID, g.timestamp, g.r.hashCode(), g.r.srcID, g.r.timestamp));
     }
 
@@ -228,9 +264,7 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
     @Override
     public void rxPostponed(Postponed p) throws RemoteException {
         log.add("rxPostponed\n");
-
         UpdateClk(p.timestamp);
-
         postponed = true;
         log.add(String.format("%6d: Received postponed from %d at %d for request %d sent at %d.\n", p.hashCode(), p.srcID, p.timestamp, p.r.hashCode(), p.r.timestamp));
     }

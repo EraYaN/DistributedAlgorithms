@@ -10,7 +10,7 @@ import java.util.Date;
  */
 public class CustomLogger extends ArrayList<String>{
     
-    SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss.SS");
+    SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss.SSS");
     @Override
     public boolean add(String s){ 
         System.out.print(s);
