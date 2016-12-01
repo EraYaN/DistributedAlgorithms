@@ -102,7 +102,7 @@ public class Exercise2_main {
         try {
             if (rmiRegistry != null) {
                 System.out.format("Running as instance %d...\n", localInstance.id);
-                allInstances.remove(localID);
+                //allInstances.remove(localID);
                 obj = new Exercise2_thread(localInstance, allInstances, MESSAGE_COUNT);
 
                 System.out.format("Listening on %s:%d.\n", localInstance.host, localInstance.port);
@@ -118,8 +118,8 @@ public class Exercise2_main {
                 Thread t = new Thread(obj);
                 t.start();
                 t.join();
-                System.out.println("Press enter to continue.");
-                System.in.read();
+                //System.out.println("Press enter to continue.");
+                //System.in.read();
                 System.out.println("Exiting...");
                 System.exit(0);
             } else {

@@ -6,3 +6,4 @@ src/Exercise1/history*.txt
 /src/Exercise2/nbproject/private/
 /src/Exercise2/build/
 /src/Exercise2/dist/
+src/Exercise2/log*.txt

@@ -11,10 +11,8 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.rmi.AlreadyBoundException;
-import java.rmi.NoSuchObjectException;
-import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
-import java.util.Map;
+import java.util.Date;
 import java.util.Random;
 
 public class Exercise2_thread implements Runnable, InstanceLookupInterface {
@@ -28,6 +26,7 @@ public class Exercise2_thread implements Runnable, InstanceLookupInterface {
     int delivered = 0;
 
     String historyFile;
+    String logFile;
 
     int totalMessageCount;
     private static final int MAX_DELAY = 1000;
@@ -43,8 +42,9 @@ public class Exercise2_thread implements Runnable, InstanceLookupInterface {
             e.printStackTrace();
         }
         remoteInstances = RemoteInstances;
-        rand = new Random(1);
+        rand = new Random();
         historyFile = String.format("history-%d.txt", localInstance.id);
+        logFile = String.format("log-%d.txt", localInstance.id);
         Path fileToDeletePath = Paths.get(historyFile);
         try {
             Files.delete(fileToDeletePath);
@@ -55,15 +55,42 @@ public class Exercise2_thread implements Runnable, InstanceLookupInterface {
         }
     }
 
+    public void DumpLog() {
+        try (Writer writer = new BufferedWriter(new OutputStreamWriter(
+                new FileOutputStream(logFile, false), "utf-8"))) {
+            for (String line : ex.log) {
+                writer.write(line);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     @Override
     public void run() {
         for (int i = 0; i < totalMessageCount; i++) {
             System.out.format("Sending message set %d of %d.\n", i + 1, totalMessageCount);
+            DumpLog();
             BroadcastRequest();
+            DumpLog();
+            System.out.format("Sent message set %d of %d.\n", i + 1, totalMessageCount);
         }
 
         while (ex.criticalSections < totalMessageCount || ex.releases < totalMessageCount * localInstance.requestGroup.size()) {
+            try {
+                ex.ProcessQueue();
+                System.out.print('.');
+                //synchronized (ex.lockObject) {
+                    System.out.format("%d", ex.granted ? 1 : 0);
+                //}
+                DumpLog();
+                Thread.sleep(250);
 
+            } catch (InterruptedException ex) {
+                ex.printStackTrace();
+            } catch (RemoteException ex) {
+                ex.printStackTrace();
+            }
         }
         System.out.println("Done.");
     }
