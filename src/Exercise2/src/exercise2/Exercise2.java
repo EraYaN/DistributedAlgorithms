@@ -27,7 +27,7 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
     Object lockObject = new Object();
 
     public int criticalSections = 0;
-    public int releases = 0;
+    public int rxReleases = 0;
 
     InstanceLookupInterface lookupCallBack;
 
@@ -55,12 +55,15 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
     }
 
     public void txRequest() {
+        numGrants = 0;
+        int tempClk = clk;
         clk++;
+        
         requestGroup.forEach((Integer id) -> {
             try {
                 Instance remoteInstance = lookupCallBack.LookupInstance(id);
 
-                Request r = new Request(localID, clk);
+                Request r = new Request(localID, tempClk);
 
                 InitRemoteObject(remoteInstance);
 
@@ -78,11 +81,14 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
     }
 
     public void txRelease() {
+        int tempClk = clk;
+        clk++;
+        
         requestGroup.forEach((Integer id) -> {
             try {
                 Instance remoteInstance = lookupCallBack.LookupInstance(id);
 
-                Release r = new Release(localID, clk);
+                Release r = new Release(localID, tempClk);
 
                 InitRemoteObject(remoteInstance);
 
@@ -146,22 +152,21 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
         clk = Math.max(NewClk + 1, clk + 1);
     }
 
-    public void ProcessQueue() throws RemoteException {
-        //synchronized (lockObject) {  
-        if (!granted) {
-            currentGrant = requestQueue.poll();
-            if (currentGrant != null) {
-                txGrant(currentGrant);
-                granted = true;
-            }
-        }
-        //}
-    }
+//    public void ProcessQueue() throws RemoteException {
+//        //synchronized (lockObject) {  
+//        if (!granted) {
+//            currentGrant = requestQueue.poll();
+//            if (currentGrant != null) {
+//                txGrant(currentGrant);
+//                granted = true;
+//            }
+//        }
+//        //}
+//    }
 
     @Override
     public void rxRequest(Request r) throws RemoteException {
-        log.add("rxRequest\n");
-        //synchronized (lockObject) {            
+        log.add("rxRequest\n");          
         UpdateClk(r.timestamp);
 
         if (!granted) {
@@ -169,7 +174,7 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
             txGrant(r);
             granted = true;
         } else {
-            log.add(String.format("%6d: Postponed request.\n", r.hashCode()));
+            //log.add(String.format("%6d: Postponed request.\n", r.hashCode()));
             requestQueue.add(r);
             Request head = requestQueue.peek();
             //System.out.format("%s; %s; %s\n", r, head, currentGrant);
@@ -180,14 +185,12 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
                 txInquire(currentGrant);
             }
         }
-        //}
         log.add(String.format("%6d: Received request from %d at %d.\n", r.hashCode(), r.srcID, r.timestamp));
     }
 
     @Override
     public void rxGrant(Grant g) {
-        log.add("rxGrant\n");
-        //synchronized (lockObject) {            
+        log.add("rxGrant\n");          
         UpdateClk(g.timestamp);
 
         numGrants++;
@@ -198,17 +201,14 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
             } catch (InterruptedException ex) {
                 ex.printStackTrace();
             }
-            numGrants = 0;
             txRelease();
         }
-        //}
         log.add(String.format("%6d: Received grant from %d at %d for request %d sent from %d at %d.\n", g.hashCode(), g.srcID, g.timestamp, g.r.hashCode(), g.r.srcID, g.r.timestamp));
     }
 
     @Override
     public void rxRelease(Release r) throws RemoteException {
-        log.add("rxRelease\n");
-        //synchronized (lockObject) {            
+        log.add("rxRelease\n");           
         UpdateClk(r.timestamp);
         granted = false;
         inquiring = false;
@@ -221,27 +221,23 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
                 granted = true;
             }
         }
-        releases++;
-        //}
+        rxReleases++;
         log.add(String.format("%6d: Received release from %d at %d.\n", r.hashCode(), r.srcID, r.timestamp));
     }
 
     @Override
     public void rxPostponed(Postponed p) throws RemoteException {
         log.add("rxPostponed\n");
-        //synchronized (lockObject) {
 
         UpdateClk(p.timestamp);
 
         postponed = true;
-        //}
         log.add(String.format("%6d: Received postponed from %d at %d for request %d sent at %d.\n", p.hashCode(), p.srcID, p.timestamp, p.r.hashCode(), p.r.timestamp));
     }
 
     @Override
     public void rxInquire(Inquire i) throws RemoteException {
         log.add("rxInquire\n");
-        //synchronized (lockObject) {
         UpdateClk(i.timestamp);
         while (!postponed && numGrants != requestGroup.size()) {
             try {
@@ -255,14 +251,12 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
             numGrants--;
             txRelinquish(i);
         }
-        //}
         log.add(String.format("%6d: Received inquire from %d at %d for request %d sent at %d.\n", i.hashCode(), i.srcID, i.timestamp, i.r.hashCode(), i.r.timestamp));
     }
 
     @Override
     public void rxRelinquish(Relinquish r) throws RemoteException {
-        log.add("rxRelinquish\n");
-        //synchronized (lockObject) {            
+        log.add("rxRelinquish\n");          
         UpdateClk(r.timestamp);
 
         inquiring = false;
@@ -272,7 +266,6 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
             granted = true;
             txGrant(currentGrant);
         }
-        // }
         log.add(String.format("%6d: Received relinquish from %d at %d for inquire %d sent at %d.\n", r.hashCode(), r.srcID, r.timestamp, r.i.hashCode(), r.i.timestamp));
     }
 }

@@ -14,6 +14,8 @@ import java.rmi.AlreadyBoundException;
 import java.rmi.RemoteException;
 import java.util.Date;
 import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Exercise2_thread implements Runnable, InstanceLookupInterface {
 
@@ -69,30 +71,32 @@ public class Exercise2_thread implements Runnable, InstanceLookupInterface {
     @Override
     public void run() {
         for (int i = 0; i < totalMessageCount; i++) {
-            System.out.format("Sending message set %d of %d.\n", i + 1, totalMessageCount);
+            ex.log.add(String.format("Sending message set %d of %d.\n", i + 1, totalMessageCount));
             DumpLog();
             BroadcastRequest();
             DumpLog();
-            System.out.format("Sent message set %d of %d.\n", i + 1, totalMessageCount);
+            ex.log.add(String.format("Sent message set %d of %d.\n", i + 1, totalMessageCount));
+            
+            while(ex.criticalSections <= i) {
+                try {
+                    Thread.sleep(150);
+                } catch (InterruptedException ex) {
+                    ex.printStackTrace();
+                }
+            }
         }
-
-        while (ex.criticalSections < totalMessageCount || ex.releases < totalMessageCount * localInstance.requestGroup.size()) {
+        while (ex.criticalSections < totalMessageCount || ex.rxReleases < totalMessageCount * localInstance.requestGroup.size()) {
             try {
-                ex.ProcessQueue();
                 System.out.print('.');
-                //synchronized (ex.lockObject) {
-                    System.out.format("%d", ex.granted ? 1 : 0);
-                //}
+                System.out.format("%d", ex.granted ? 1 : 0);
                 DumpLog();
                 Thread.sleep(250);
 
             } catch (InterruptedException ex) {
                 ex.printStackTrace();
-            } catch (RemoteException ex) {
-                ex.printStackTrace();
             }
         }
-        System.out.println("Done.");
+        ex.log.add("Done.\n");
     }
 
     private void RandomDelay() throws InterruptedException {

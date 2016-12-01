@@ -15,7 +15,7 @@ public class Exercise2_main {
 
     //constants
     public static final String PROJECT_ID = "Exercise2";
-    public static final int MESSAGE_COUNT = 1;
+    public static final int MESSAGE_COUNT = 2;
     public static final int AUTO_START_DELAY = 5; // seconds
     public static final String INSTANCES_FILE = "data/instances.csv";
 
@@ -118,8 +118,8 @@ public class Exercise2_main {
                 Thread t = new Thread(obj);
                 t.start();
                 t.join();
-                //System.out.println("Press enter to continue.");
-                //System.in.read();
+                System.out.println("Press enter to continue.");
+                System.in.read();
                 System.out.println("Exiting...");
                 System.exit(0);
             } else {
