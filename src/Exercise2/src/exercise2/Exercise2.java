@@ -15,7 +15,7 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
     int localID;
     int swarmSize;
     int totalMessageCount;
-    
+
     String criticalFile = "critical.txt";
 
     volatile boolean granted = false;
@@ -64,9 +64,12 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
     }
 
     public void txRequest() {
-        //numGrants = 0;         
-        clk++;
-        int tempClk = clk;
+        //numGrants = 0;  
+        int tempClk;
+        synchronized (lockObject) {
+            clk++;
+            tempClk = clk;
+        }
         requestGroup.forEach((Integer id) -> {
             try {
                 Instance remoteInstance = lookupCallBack.LookupInstance(id);
@@ -88,9 +91,12 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
         });
     }
 
-    public void txRelease() {        
-        clk++;
-        int tempClk = clk;
+    public void txRelease() {
+        int tempClk;
+        synchronized (lockObject) {
+            clk++;
+            tempClk = clk;
+        }
         requestGroup.forEach((Integer id) -> {
             try {
                 Instance remoteInstance = lookupCallBack.LookupInstance(id);
@@ -112,10 +118,10 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
         });
     }
 
-    public void txGrant(Request r) throws RemoteException {             
+    public void txGrant(Request r) throws RemoteException {
         Grant g = new Grant(localID, clk, r);
         log.add(String.format("%6d: Sending grant to %d at %d for request %d sent from %d at %d.\n", g.hashCode(), r.srcID, g.timestamp, r.hashCode(), r.srcID, r.timestamp));
-        Instance dest = lookupCallBack.LookupInstance(r.srcID);   
+        Instance dest = lookupCallBack.LookupInstance(r.srcID);
         InitRemoteObject(dest);
         ((Exercise2_RMI) dest.object).rxGrant(g);
         log.add(String.format("%6d: Sent grant to %d at %d for request %d sent from %d at %d.\n", g.hashCode(), r.srcID, g.timestamp, r.hashCode(), r.srcID, r.timestamp));
@@ -125,12 +131,12 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
         Postponed p = new Postponed(localID, clk, r);
         log.add(String.format("%6d: Sending postponed to %d at %d for request %d at %d.\n", p.hashCode(), r.srcID, p.timestamp, r.hashCode(), r.timestamp));
         Instance dest = lookupCallBack.LookupInstance(r.srcID);
-        InitRemoteObject(dest);        
+        InitRemoteObject(dest);
         ((Exercise2_RMI) dest.object).rxPostponed(p);
         log.add(String.format("%6d: Sent postponed to %d at %d for request %d at %d.\n", p.hashCode(), r.srcID, p.timestamp, r.hashCode(), r.timestamp));
     }
 
-    public void txInquire(Request r) throws RemoteException {        
+    public void txInquire(Request r) throws RemoteException {
         Inquire i = new Inquire(localID, clk, r);
         log.add(String.format("%6d: Sending inquire to %d at %d for request %d sent at %d.\n", i.hashCode(), r.srcID, i.timestamp, r.hashCode(), r.timestamp));
         Instance dest = lookupCallBack.LookupInstance(r.srcID);
@@ -139,19 +145,19 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
         log.add(String.format("%6d: Sent inquire to %d at %d for request %d sent at %d.\n", i.hashCode(), r.srcID, i.timestamp, r.hashCode(), r.timestamp));
     }
 
-    public void txRelinquish(Inquire i) throws RemoteException {        
+    public void txRelinquish(Inquire i) throws RemoteException {
         Relinquish r = new Relinquish(localID, clk, i);
         log.add(String.format("%6d: Sending relinquish to %d at %d for inquire %d sent at %d.\n", r.hashCode(), i.srcID, r.timestamp, i.hashCode(), i.timestamp));
         Instance dest = lookupCallBack.LookupInstance(i.srcID);
         InitRemoteObject(dest);
         ((Exercise2_RMI) dest.object).rxRelinquish(r);
-         log.add(String.format("%6d: Sent relinquish to %d at %d for inquire %d sent at %d.\n", r.hashCode(), i.srcID, r.timestamp, i.hashCode(), i.timestamp));
+        log.add(String.format("%6d: Sent relinquish to %d at %d for inquire %d sent at %d.\n", r.hashCode(), i.srcID, r.timestamp, i.hashCode(), i.timestamp));
     }
-    
-    private void WriteCriticalFile(String str){
+
+    private void WriteCriticalFile(String str) {
         try (Writer writer = new BufferedWriter(new OutputStreamWriter(
                 new FileOutputStream(criticalFile, true), "utf-8"))) {
-            
+
             writer.write(str);
         } catch (IOException e) {
             e.printStackTrace();
@@ -161,9 +167,9 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
     private void CriticalSection(int id) throws InterruptedException {
         log.add(String.format("Entered critical section for request %d at %d.\n", id, clk));
         WriteCriticalFile(String.format("\nID %d: Entered critical section for request %d at %d.", localID, id, clk));
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 3; i++) {
             Thread.sleep(125);
-            log.add(String.format("Processing %d out of %d at %d for %d.\n", i, 10, clk, id));
+            log.add(String.format("Processing %d out of %d at %d for %d.\n", i, 3, clk, id));
             Thread.sleep(125);
         }
         WriteCriticalFile(String.format(" Exited.\n", localID, id, clk));
@@ -175,127 +181,122 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
         clk = Math.max(NewClk + 1, clk + 1);
     }
 
-//    public void ProcessQueue() throws RemoteException {
-//        //synchronized (lockObject) {  
-//        if (!granted) {
-//            currentGrant = requestQueue.poll();
-//            if (currentGrant != null) {
-//                txGrant(currentGrant);
-//                granted = true;
-//            }
-//        }
-//        //}
-//    }
-    
-    public void Patchwork() throws RemoteException {
-        CheckGrants();
-        /*if (numGrants == requestGroup.size()) {            
-            Request head = requestQueue.peek();
-            if(head.srcID!=currentGrant.srcID){  
-                Inquire i = new Inquire(localID, clk, currentGrant);
-                txRelinquish(i);
+    public void CheckGrants(Grant g) {
+        boolean do_release = false;
+        synchronized (lockObject) {
+            if (numGrants >= requestGroup.size() && busy == false) {
+                postponed = false;
+                busy = true;
+                try {
+                    CriticalSection(g.r.hashCode());
+                } catch (InterruptedException ex) {
+                    ex.printStackTrace();
+                }
+                do_release = true;
+                
+                numGrants = Math.max(0, numGrants - requestGroup.size());//Don't own these anymore, used some grants.
+                log.add(String.format("%6d: Consumed %d grants from the received grants.\n", g.hashCode(), requestGroup.size()));
+                busy = false;
             }
-        }*/
-    
-    }
-    
-    public void CheckGrants(){
-        if (numGrants >= requestGroup.size() && busy==false) {
-            postponed = false;
-            busy = true;
-            try {
-                CriticalSection(currentGrant.hashCode());
-            } catch (InterruptedException ex) {
-                ex.printStackTrace();
-            }
-            txRelease(); 
-            numGrants = Math.max(0,numGrants-requestGroup.size());//Don't own these anymore, used some grants.
-            log.add(String.format("Consumed %d grants from the received grants.\n", requestGroup.size()));
-            busy = false;
-        }    
-    }
-    
-    public void CheckGrants(Grant g){
-        if (numGrants >= requestGroup.size() && busy==false) {
-            postponed = false;
-            busy = true;
-            try {
-                CriticalSection(g.r.hashCode());
-            } catch (InterruptedException ex) {
-                ex.printStackTrace();
-            }
-            txRelease(); 
-            numGrants = Math.max(0,numGrants-requestGroup.size());//Don't own these anymore, used some grants.
-            log.add(String.format("%6d: Consumed %d grants from the received grants.\n", g.hashCode(), requestGroup.size()));
-            busy = false;
-        }    
+        }
+        if (do_release) {
+            txRelease();
+        }
     }
 
     @Override
     public void rxRequest(Request r) throws RemoteException {
-        log.add(String.format("%6d: Receiving request from %d at %d.\n", r.hashCode(), r.srcID, r.timestamp));               
-        UpdateClk(r.timestamp);
-
-        if (!granted && !busy) {
-            currentGrant = r;
-            txGrant(r);
-            granted = true;
-        } else {
-            //log.add(String.format("%6d: Postponed request.\n", r.hashCode()));
-            requestQueue.add(r);
-            Request head = requestQueue.peek();
-            //System.out.format("%s; %s; %s\n", r, head, currentGrant);
-            if (currentGrant.compareTo(r) < 0 || head.compareTo(r) < 0) {
-                txPostponed(r);
-            } else if (!inquiring) {
-                inquiring = true;
-                txInquire(currentGrant);
+        log.add(String.format("%6d: Receiving request from %d at %d.\n", r.hashCode(), r.srcID, r.timestamp));
+        boolean do_grant = false;
+        boolean do_inquire = false;
+        boolean do_postponed = false;
+        synchronized (lockObject) {
+            UpdateClk(r.timestamp);
+            if (!granted && !busy) {
+                currentGrant = r;
+                do_grant = true;
+                granted = true;
+            } else {
+                //log.add(String.format("%6d: Postponed request.\n", r.hashCode()));
+                requestQueue.add(r);
+                Request head = requestQueue.peek();
+                //System.out.format("%s; %s; %s\n", r, head, currentGrant);
+                if (currentGrant.compareTo(r) < 0 || head.compareTo(r) < 0) {
+                    do_postponed = true;
+                } else if (!inquiring) {
+                    inquiring = true;
+                    do_inquire = true;
+                }
             }
         }
-        log.add(String.format("%6d: Received request from %d at %d.\n", r.hashCode(), r.srcID, r.timestamp));       
+
+        if (do_grant) {
+            txGrant(r);
+        }
+        if (do_inquire) {
+            txInquire(currentGrant);
+        }
+        if (do_postponed) {
+            txPostponed(r);
+        }
+
+        log.add(String.format("%6d: Received request from %d at %d.\n", r.hashCode(), r.srcID, r.timestamp));
     }
 
     @Override
     public void rxGrant(Grant g) {
-        log.add(String.format("%6d: Receiving grant from %d at %d for request %d sent from %d at %d.\n", g.hashCode(), g.srcID, g.timestamp, g.r.hashCode(), g.r.srcID, g.r.timestamp));               
-        UpdateClk(g.timestamp);
-
-        numGrants++;
+        log.add(String.format("%6d: Receiving grant from %d at %d for request %d sent from %d at %d.\n", g.hashCode(), g.srcID, g.timestamp, g.r.hashCode(), g.r.srcID, g.r.timestamp));
+        synchronized (lockObject) {
+            UpdateClk(g.timestamp);
+            numGrants++;
+        }
         CheckGrants(g);
-        log.add(String.format("%6d: Received grant from %d at %d for request %d sent from %d at %d.\n", g.hashCode(), g.srcID, g.timestamp, g.r.hashCode(), g.r.srcID, g.r.timestamp));   
+        log.add(String.format("%6d: Received grant from %d at %d for request %d sent from %d at %d.\n", g.hashCode(), g.srcID, g.timestamp, g.r.hashCode(), g.r.srcID, g.r.timestamp));
     }
 
     @Override
     public void rxRelease(Release r) throws RemoteException {
-        log.add(String.format("%6d: Receiving release from %d at %d.\n", r.hashCode(), r.srcID, r.timestamp));                 
-        UpdateClk(r.timestamp);
-        granted = false;
-        inquiring = false;
-        //requestQueue.remove(currentGrant);
-        rxReleases++;
-        
-        if (!requestQueue.isEmpty()) {
-            currentGrant = requestQueue.poll();
-            if (currentGrant != null) {
-                txGrant(currentGrant);
-                granted = true;
+        log.add(String.format("%6d: Receiving release from %d at %d.\n", r.hashCode(), r.srcID, r.timestamp));
+        boolean do_grant = false;
+        synchronized (lockObject) {
+            UpdateClk(r.timestamp);
+            granted = false;
+            inquiring = false;
+            //requestQueue.remove(currentGrant);
+            rxReleases++;
+
+            if (!requestQueue.isEmpty()) {
+                currentGrant = requestQueue.poll();
+                if (currentGrant != null) {
+                    do_grant = true;
+                    granted = true;
+                }
             }
         }
-        log.add(String.format("%6d: Received release from %d at %d.\n", r.hashCode(), r.srcID, r.timestamp));                
+        if (do_grant) {
+            txGrant(currentGrant);
+        }
+        log.add(String.format("%6d: Received release from %d at %d.\n", r.hashCode(), r.srcID, r.timestamp));
     }
 
     @Override
     public void rxPostponed(Postponed p) throws RemoteException {
-        log.add(String.format("%6d: Receiving postponed from %d at %d for request %d sent at %d.\n", p.hashCode(), p.srcID, p.timestamp, p.r.hashCode(), p.r.timestamp));        
-        UpdateClk(p.timestamp);
-        postponed = true;
-        log.add(String.format("%6d: Received postponed from %d at %d for request %d sent at %d.\n", p.hashCode(), p.srcID, p.timestamp, p.r.hashCode(), p.r.timestamp));        
+        log.add(String.format("%6d: Receiving postponed from %d at %d for request %d sent at %d.\n", p.hashCode(), p.srcID, p.timestamp, p.r.hashCode(), p.r.timestamp));
+        synchronized (lockObject) {
+            UpdateClk(p.timestamp);
+            postponed = true;
+        }
+        log.add(String.format("%6d: Received postponed from %d at %d for request %d sent at %d.\n", p.hashCode(), p.srcID, p.timestamp, p.r.hashCode(), p.r.timestamp));
     }
 
     @Override
-    public void rxInquire(Inquire i) throws RemoteException {        
+    public void rxInquire(Inquire i) throws RemoteException {
         log.add(String.format("%6d: Receiving inquire from %d at %d for request %d sent at %d.\n", i.hashCode(), i.srcID, i.timestamp, i.r.hashCode(), i.r.timestamp));
-        UpdateClk(i.timestamp);
+
+        synchronized (lockObject) {
+            UpdateClk(i.timestamp);
+
+        }
         //while (!postponed && numGrants != requestGroup.size()) {
         while (!postponed && !busy) {
             try {
@@ -305,8 +306,14 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
                 ex.printStackTrace();
             }
         }
-        if (postponed) {
-            numGrants--;
+        boolean do_inquire = false;
+        synchronized (lockObject) {
+            if (postponed) {
+                numGrants--;
+                do_inquire = true;
+            }
+        }
+        if (do_inquire) {
             txRelinquish(i);
         }
         log.add(String.format("%6d: Received inquire from %d at %d for request %d sent at %d.\n", i.hashCode(), i.srcID, i.timestamp, i.r.hashCode(), i.r.timestamp));
@@ -314,16 +321,22 @@ class Exercise2 extends UnicastRemoteObject implements Exercise2_RMI {
 
     @Override
     public void rxRelinquish(Relinquish r) throws RemoteException {
-        log.add(String.format("%6d: Receiving relinquish from %d at %d for inquire %d sent at %d.\n", r.hashCode(), r.srcID, r.timestamp, r.i.hashCode(), r.i.timestamp));                  
-        UpdateClk(r.timestamp);
+        log.add(String.format("%6d: Receiving relinquish from %d at %d for inquire %d sent at %d.\n", r.hashCode(), r.srcID, r.timestamp, r.i.hashCode(), r.i.timestamp));
+        boolean do_grant = false;
+        synchronized (lockObject) {
+            UpdateClk(r.timestamp);
 
-        inquiring = false;
-        requestQueue.add(r.i.r);
-        currentGrant = requestQueue.poll();
-        if (currentGrant != null) {
-            granted = true;
+            inquiring = false;
+            requestQueue.add(r.i.r);
+            currentGrant = requestQueue.poll();
+            if (currentGrant != null) {
+                granted = true;
+                do_grant = true;
+            }
+        }
+        if (do_grant) {
             txGrant(currentGrant);
         }
-        log.add(String.format("%6d: Received relinquish from %d at %d for inquire %d sent at %d.\n", r.hashCode(), r.srcID, r.timestamp, r.i.hashCode(), r.i.timestamp));        
+        log.add(String.format("%6d: Received relinquish from %d at %d for inquire %d sent at %d.\n", r.hashCode(), r.srcID, r.timestamp, r.i.hashCode(), r.i.timestamp));
     }
 }

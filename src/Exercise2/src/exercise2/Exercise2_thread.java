@@ -28,7 +28,7 @@ public class Exercise2_thread implements Runnable, InstanceLookupInterface {
     String logFile;
 
     int totalMessageCount;
-    private static final int MAX_DELAY = 1000;
+    private static final int MAX_DELAY = 500;
 
     public Exercise2_thread(Instance LocalInstance, InstanceMap RemoteInstances, int TotalMessageCount) throws RemoteException {
         totalMessageCount = TotalMessageCount;
@@ -96,7 +96,7 @@ public class Exercise2_thread implements Runnable, InstanceLookupInterface {
             ex.log.add(String.format("Sent message set %d of %d.\n", i + 1, totalMessageCount));
             while (ex.criticalSections <= i) {
                 try {
-                    ex.CheckGrants();
+                    System.out.print(i);
                     PrintStatusMessage("[F] ");
                     Thread.sleep(1000);
                 } catch (InterruptedException intex) {
