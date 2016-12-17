@@ -25,6 +25,12 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Exercise3.py" />
+    <Compile Include="message.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="node.py">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Content Include="requirements.txt" />
