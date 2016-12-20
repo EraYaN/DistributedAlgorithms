@@ -3,17 +3,15 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>58ef5d1e-9b6f-4925-8599-81dcc76aee8a</ProjectGuid>
+    <ProjectGuid>e2405708-9451-4150-ba5a-0db1abde4a4e</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>Exercise3.py</StartupFile>
+    <StartupFile>ExampleChatClient.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
-    <Name>Exercise3</Name>
-    <RootNamespace>Exercise3</RootNamespace>
-    <InterpreterId>{9a7a9026-48c1-4688-9d5d-e5699d47d074}</InterpreterId>
-    <InterpreterVersion>3.5</InterpreterVersion>
+    <Name>ExampleChatClient</Name>
+    <RootNamespace>ExampleChatClient</RootNamespace>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -24,32 +22,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="ex3\Message.py">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="ex3\Node.py">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="ex3\NodeInfo.py">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="ex3\Transport.py">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="ex3\__init__.py">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Exercise3.py" />
-    <Compile Include="mplog.py" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="requirements.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <InterpreterReference Include="{9a7a9026-48c1-4688-9d5d-e5699d47d074}\3.5" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="ex3\" />
+    <Compile Include="ExampleChatClient.py" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
