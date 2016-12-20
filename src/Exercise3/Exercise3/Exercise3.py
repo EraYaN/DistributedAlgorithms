@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.DEBUG, format=FORMAT)
 logger = logging.getLogger('main')
 
 exitevent = None
-NUM_NODES = 20
+NUM_NODES = 50
 
 def node_wrapper(node: ex3.Node, synchronizer, exitevent):
     """Run function under the pool
@@ -103,6 +103,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-

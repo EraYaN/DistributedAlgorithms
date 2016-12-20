@@ -33,7 +33,7 @@ class Node(object):
     logger = None
 
     # Number extra candidates (approx)
-    candidates_num_appox = 2
+    candidates_num_appox = 5
 
     # NodeInfo
     info = None
@@ -126,12 +126,15 @@ class Node(object):
         self.logger.debug("Ignoring capture attempt from {0}, since ({1},{2}) < ({3},{4}).".format(message.src.id, message.level, message.id, self.level, self.owner_id))
 
     def handle_candidate(self, message: Message):
-        self.logger.info("Killed: {}".format(self.killed))
-        if message.id == self.info.id and not self.killed:
-            self.level += 1
-            link_id = self.untraversed.pop()
-            self.logger.info("Received acknowledgement for capture attempt, captured {0}, {1} remaining.".format(link_id,len(self.untraversed)))    
-            return True
+        if message.id == self.info.id:
+            if self.killed:
+                self.logger.debug("Ignoring acknowledgement for capture attempt from {}, since I was killed in the meantime.".format(message.src.id))
+                return False
+            else:
+                self.level += 1
+                link_id = self.untraversed.pop()
+                self.logger.info("Received acknowledgement for capture attempt, captured {0}, {1} remaining.".format(link_id, len(self.untraversed)))    
+                return True
 
         elif message.level < self.level or (message.level == self.level and message.id < self.info.id):
             self.logger.debug("Ignoring kill attempt from {0} on behalf of {1}, since ({2},{1}) < ({3},{4}).".format(message.src.id, message.id, message.level, self.level, self.info.id))

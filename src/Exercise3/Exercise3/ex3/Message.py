@@ -12,4 +12,3 @@ class Message(object):
         self.dst = dst
         self.level = level
         self.id = id
-
