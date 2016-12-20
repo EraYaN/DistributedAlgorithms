@@ -15,6 +15,7 @@ logging.basicConfig(level=logging.DEBUG, format=FORMAT)
 logger = logging.getLogger('main')
 
 exitevent = None
+NUM_NODES = 20
 
 def node_wrapper(node: ex3.Node, synchronizer, exitevent):
     """Run function under the pool
@@ -69,7 +70,7 @@ def ProcessJoin(x):
 def main():
     logger.info("Starting system.")
     nis = {}
-    for x in range(10):
+    for x in range(NUM_NODES):
         ni = ex3.NodeInfo(x+1,ex3.Transport.TCP,'localhost',32516+x)
         nis[x+1] = ni
 
