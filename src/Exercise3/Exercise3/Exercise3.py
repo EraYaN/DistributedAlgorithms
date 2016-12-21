@@ -19,7 +19,7 @@ from math import floor
 multiprocessing_logging.install_mp_handler()
 
 FORMAT = '%(asctime)s - %(processName)s - %(levelname)s - %(message)s'
-logging.basicConfig(level=logging.INFO,format=FORMAT)
+logging.basicConfig(level=logging.DEBUG,format=FORMAT)
 logger = logging.getLogger('main')
 #filehandler = logging.FileHandler(filename='exercise3.log',mode='w')
 #filehandler.setLevel(logging.DEBUG)
@@ -30,8 +30,10 @@ logger = logging.getLogger('main')
 
 
 exitevent = None
-NUM_NODES = 100
-AVG_CANDIDATES = 4#floor(NUM_NODES/5)
+NUM_NODES = 10
+AVG_CANDIDATES = 2#floor(NUM_NODES/5)
+CURRENT_HOST = '192.168.178.13'
+LOCALHOST = 'localhost'
 
 def node_wrapper(node: ex3.Node, synchronizer, exitevent):
     """Run function under the pool
@@ -96,21 +98,41 @@ def main():
     premature_exit = False
     print("System starting.")
 
-    routerevent = mp.Event()
-    router_proc = mp.Process(target=router, name="Router", args=(32514,32515,routerevent))
+    startport = 32516
+    routerport = 32514
+    dealerport = 32515
+    routerdealerhost = '192.168.178.13'
+    if routerdealerhost == CURRENT_HOST:
+        routerdealerhost = LOCALHOST
+    routerinfo = ex3.NodeInfo(0,ex3.Transport.TCP,routerdealerhost,routerport,routerdealerhost != CURRENT_HOST)
+    dealerinfo = ex3.NodeInfo(0,ex3.Transport.TCP,routerdealerhost,dealerport,routerdealerhost != CURRENT_HOST)
+
+    if routerinfo.local or dealerinfo.local:
+        routerevent = mp.Event()
+        router_proc = mp.Process(target=router, name="Router", args=(routerport,dealerport,routerevent))
 
     router_proc.start()
 
     logger.log(1000,"Starting system.")
+
+    all_systems = [
+        {"host":"192.168.178.3","transport":ex3.Transport.TCP,"startport":startport,"number":NUM_NODES},
+        {"host":"192.168.178.13","transport":ex3.Transport.TCP,"startport":startport,"number":NUM_NODES}
+    ]
+
     nis = {}
-    for x in range(NUM_NODES):
-        ni = ex3.NodeInfo(x+1,ex3.Transport.TCP,'localhost',32516+x)
-        nis[x+1] = ni
+    i = 0
+    for system in all_systems:
+        for x in range(system['number']):
+            ni = ex3.NodeInfo(i+1,ex3.Transport.TCP,system['host'] if system['host'] != CURRENT_HOST else LOCALHOST,system['startport']+x,system['host'] == CURRENT_HOST)
+            nis[i+1] = ni
+            i += 1
 
     nodes = list()
 
     for ni in nis:
-        nodes.append(ex3.Node(nis.get(ni),nis,AVG_CANDIDATES))
+        if nis.get(ni).local:
+            nodes.append(ex3.Node(nis.get(ni),nis,AVG_CANDIDATES,routerinfo.connect_uri,dealerinfo.connect_uri))
 
     synchronizer = mp.Barrier(len(nodes))
     #serializer = mp.Lock()
@@ -134,8 +156,9 @@ def main():
         exitevent.set()
         logger.info("Forced Exit.")
     logger.info("Done.")
-    routerevent.set()
-    router_proc.join()
+    if routerinfo.local or dealerinfo.local:
+        routerevent.set()
+        router_proc.join()
     print("System shutdown.")
 if __name__ == "__main__":
     main()

@@ -27,9 +27,10 @@ class Node(object):
     q_tx = Queue()
     q_rx = Queue()
     nodeinfos = {}
-    sockets = {}
     server_socket = None
     client_socket = None
+    routeruri = None # To send messages to
+    dealeruri = None # To receive messages from
 
     # Debug facilities
     logger = None
@@ -61,10 +62,12 @@ class Node(object):
     stat_sent_killcap = 0
     stat_sent_ack = 0
 
-    def __init__(self, info: NodeInfo, nodeinfos: dict, candidates_num_appox: int):
+    def __init__(self, info: NodeInfo, nodeinfos: dict, candidates_num_appox: int, routeruri: str, dealeruri: str):
         self.info = info
         self.nodeinfos = nodeinfos
         self.candidates_num_appox = candidates_num_appox
+        self.routeruri = routeruri
+        self.dealeruri = dealeruri
 
         self.untraversed = [id for id in self.nodeinfos if id != self.info.id]
         random.shuffle(self.untraversed)
@@ -154,7 +157,7 @@ class Node(object):
             else:
                 self.level += 1
                 link_id = self.untraversed.pop()
-                self.logger.debug("Received acknowledgement for capture attempt, captured {0}, {1} remaining.".format(link_id, len(self.untraversed)))
+                self.logger.debug("Received acknowledgement for capture attempt, captured node {0}, {1} remaining.".format(link_id, len(self.untraversed)))
                 return True
 
         elif message.level < self.level or (message.level == self.level and message.id < self.info.id):
@@ -178,7 +181,7 @@ class Node(object):
         # Setup listener:
         self.server_socket = self.context.socket(zmq.ROUTER)
         self.server_socket.identity = struct.pack('I',self.info.id)
-        self.server_socket.connect("tcp://localhost:32515")
+        self.server_socket.connect(self.dealeruri)
         # Run Async
         self.server_thread()
 
@@ -186,7 +189,7 @@ class Node(object):
         # Setup connection
         self.client_socket = self.context.socket(zmq.DEALER)
         self.client_socket.identity = struct.pack('I',self.info.id)
-        self.client_socket.connect("tcp://localhost:32514")
+        self.client_socket.connect(self.routeruri)
         # Run Async
         self.client_thread()
 
@@ -198,6 +201,7 @@ class Node(object):
                 message = pickle.loads(envelope[3])#self.server_socket.recv_pyobj(flags=0)
                 if type(message) is Message:
                     self.q_rx.put(message)
+                    self.logger.debug("[SERVER] received packet to node {0}.".format(message.dst.id))
                 else:
                     self.logger.warning("[SERVER] got bad packet.")
         else:
@@ -205,11 +209,12 @@ class Node(object):
 
     @threaded
     def client_thread(self):
-        if self.server_socket is not None:
+        if self.client_socket is not None:
             while True:
                 message = self.q_tx.get(block=True) # waits for message
                 self.client_socket.send(b"", zmq.SNDMORE)
                 self.client_socket.send_pyobj(message, flags=0)
+                self.logger.debug("[CLIENT] sent packet to node {0}.".format(message.dst.id))
         else:
             self.logger.warning("[CLIENT] can not start thread.")
 
