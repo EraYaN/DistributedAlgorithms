@@ -84,8 +84,7 @@ class Node(object):
             capture_new_link = True
         self.start_time = time.perf_counter()
         while not exitevent.is_set():
-            # Random delay between 0 and 0.1 seconds
-            #time.sleep(random.random()/10)
+            self.random_delay()
             # Attempt to capture next link if required.
             if self.candidate and capture_new_link:
                 new_link = self.untraversed[-1]
@@ -94,6 +93,7 @@ class Node(object):
                 self.stat_sent_killcap += 1
             try:
                 message = self.q_rx.get(block=True, timeout=0.001) # waits for message, timeout is to reduce CPU load.
+                self.random_delay()
             except Empty:
                 pass
             else:
@@ -117,6 +117,10 @@ class Node(object):
         else:
             self.logger.debug("Run ended.")
         self.logger.info("#Stats;id;{: 6};level;{: 6};times_captured;{: 6};sent_ack;{: 6};sent_killcap;{: 6}".format(self.info.id,self.level,self.stat_times_captured,self.stat_sent_ack,self.stat_sent_killcap))
+
+    def random_delay(self):
+        # Random delay between 0 and 0.1 seconds
+        time.sleep(random.random()/10)
 
     def handle_ordinary(self, message: Message):
         if message.level == self.level and message.id == self.owner_id:
@@ -200,6 +204,7 @@ class Node(object):
                 envelope = self.server_socket.recv_multipart(flags=0)
                 message = pickle.loads(envelope[3])#self.server_socket.recv_pyobj(flags=0)
                 if type(message) is Message:
+                    self.random_delay()
                     self.q_rx.put(message)
                     self.logger.debug("[SERVER] received packet to node {0}.".format(message.dst.id))
                 else:
@@ -212,6 +217,7 @@ class Node(object):
         if self.client_socket is not None:
             while True:
                 message = self.q_tx.get(block=True) # waits for message
+                self.random_delay()
                 self.client_socket.send(b"", zmq.SNDMORE)
                 self.client_socket.send_pyobj(message, flags=0)
                 self.logger.debug("[CLIENT] sent packet to node {0}.".format(message.dst.id))
