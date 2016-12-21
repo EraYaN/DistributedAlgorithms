@@ -19,7 +19,7 @@ from math import floor
 multiprocessing_logging.install_mp_handler()
 
 FORMAT = '%(asctime)s - %(processName)s - %(levelname)s - %(message)s'
-logging.basicConfig(level=logging.DEBUG,format=FORMAT)
+logging.basicConfig(level=logging.INFO,format=FORMAT)
 logger = logging.getLogger('main')
 #filehandler = logging.FileHandler(filename='exercise3.log',mode='w')
 #filehandler.setLevel(logging.DEBUG)
@@ -30,8 +30,8 @@ logger = logging.getLogger('main')
 
 
 exitevent = None
-NUM_NODES = 10
-AVG_CANDIDATES = 2#floor(NUM_NODES/5)
+NUM_NODES = 250
+AVG_CANDIDATES = 25#floor(NUM_NODES/5)
 CURRENT_HOST = '192.168.178.13'
 LOCALHOST = 'localhost'
 

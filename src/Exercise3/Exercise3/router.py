@@ -4,9 +4,14 @@
 
 import zmq
 import logging
+import multiprocessing_logging
+import signal
 from multiprocessing import Event
 
 def router(frontend_port: int, backend_port: int, routerexit: Event):
+    multiprocessing_logging.install_mp_handler()
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+
     logger = logging.getLogger('router')
     # Prepare our context and sockets
     context = zmq.Context()

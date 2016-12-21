@@ -120,7 +120,7 @@ class Node(object):
 
     def random_delay(self):
         # Random delay between 0 and 0.1 seconds
-        time.sleep(random.random())
+        time.sleep(random.random()/10)
 
     def handle_ordinary(self, message: Message):
         if message.level == self.level and message.id == self.owner_id:
