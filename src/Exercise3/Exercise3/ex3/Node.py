@@ -33,7 +33,7 @@ class Node(object):
     logger = None
 
     # Number extra candidates (approx)
-    candidates_num_appox = 5
+    candidates_num_appox = 0
 
     # NodeInfo
     info = None
@@ -50,15 +50,33 @@ class Node(object):
     killed = False
     elected = False
 
-    def __init__(self, info: NodeInfo, nodeinfos: dict):
+    # Timing (use time.perf_counter)
+    start_time = None
+    end_time = None
+
+    def __init__(self, info: NodeInfo, nodeinfos: dict, candidates_num_appox: int):
         self.info = info
         self.nodeinfos = nodeinfos
-        
+        self.candidates_num_appox = candidates_num_appox
+
+    def reset_state(self,run_id):
         self.untraversed = [id for id in self.nodeinfos if id != self.info.id]
         random.shuffle(self.untraversed)
+        # Level int
+        self.level = 0
+        self.owner_id = 0
+        # NodeInfo
+        self.father = None
+        # NodeInfo
+        self.potential_father = None
+        self.candidate = False
+        self.killed = False
+        self.elected = False
+        self.start_time = None
+        self.end_time = None
+        self.logger.info("Reset node state to initial values for run {0}.".format(run_id))
 
     def run(self,exitevent):
-        # TODO sort messages from ordinary to candidate.  and start candidate
         random_int = struct.unpack('I',os.urandom(4))[0]
         maxint = (2 ** 32) - 1
         random_double = float(random_int) / (maxint) # random between 0 and 1
@@ -67,7 +85,7 @@ class Node(object):
             self.logger.info("Became candidate, going to attempt to capture {0} nodes.".format(len(self.untraversed)))
             self.candidate = True
             capture_new_link = True
-
+        self.start_time = time.perf_counter()
         while not exitevent.is_set():
             # Attempt to capture next link if required.
             if self.candidate and capture_new_link:
@@ -76,7 +94,7 @@ class Node(object):
                 self.logger.debug("Sent capture attempt to {}.".format(new_link))
 
             try:
-                message = self.q_rx.get(block=True, timeout=1) # waits for message
+                message = self.q_rx.get(block=True, timeout=0.01) # waits for message, timeout is to reduce CPU load.
             except Empty:
                 pass
             else:
@@ -88,11 +106,12 @@ class Node(object):
                     if len(self.untraversed) == 0:
                         self.elected = True
                         self.logger.info("Elected!")
+                        self.end_time = time.perf_counter()
                         exitevent.set()
                 else:
                     # self.logger.debug("Handled packet as ordinary.")
                     self.handle_ordinary(message)
-    
+
         if self.elected:
             self.logger.debug("Run ended. Became elected.")
         else:
@@ -133,7 +152,7 @@ class Node(object):
             else:
                 self.level += 1
                 link_id = self.untraversed.pop()
-                self.logger.info("Received acknowledgement for capture attempt, captured {0}, {1} remaining.".format(link_id, len(self.untraversed)))    
+                self.logger.info("Received acknowledgement for capture attempt, captured {0}, {1} remaining.".format(link_id, len(self.untraversed)))
                 return True
 
         elif message.level < self.level or (message.level == self.level and message.id < self.info.id):
