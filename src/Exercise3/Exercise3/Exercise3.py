@@ -10,6 +10,8 @@ import atexit
 import signal
 import sys
 
+from math import floor
+
 FORMAT = '%(asctime)s - %(processName)s - %(levelname)s - %(message)s'
 logging.basicConfig(level=logging.DEBUG, format=FORMAT, filename='exercise3.log',filemode='w')
 logger = logging.getLogger('main')
