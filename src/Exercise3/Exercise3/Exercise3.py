@@ -11,11 +11,13 @@ import signal
 import sys
 
 FORMAT = '%(asctime)s - %(processName)s - %(levelname)s - %(message)s'
-logging.basicConfig(level=logging.DEBUG, format=FORMAT)
+logging.basicConfig(level=logging.DEBUG, format=FORMAT, filename='exercise3.log',filemode='w')
 logger = logging.getLogger('main')
 
 exitevent = None
 NUM_NODES = 50
+NUM_RUNS = 1
+AVG_CANDIDATES = floor(NUM_NODES/5)
 
 def node_wrapper(node: ex3.Node, synchronizer, exitevent):
     """Run function under the pool
@@ -68,7 +70,9 @@ def ProcessJoin(x):
     x.join()
 
 def main():
-    logger.info("Starting system.")
+    premature_exit = False
+    print("System starting.")
+    logger.log(1000,"Starting system.")
     nis = {}
     for x in range(NUM_NODES):
         ni = ex3.NodeInfo(x+1,ex3.Transport.TCP,'localhost',32516+x)
@@ -77,7 +81,7 @@ def main():
     nodes = list()
 
     for ni in nis:
-        nodes.append(ex3.Node(nis.get(ni),nis))
+        nodes.append(ex3.Node(nis.get(ni),nis,AVG_CANDIDATES))
 
     synchronizer = mp.Barrier(len(nodes))
     #serializer = mp.Lock()
@@ -101,5 +105,6 @@ def main():
             logger.info("Forced Exit.")
         logger.info("Done.")
 
+        print("System shutdown.")
 if __name__ == "__main__":
     main()
