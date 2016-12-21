@@ -69,7 +69,7 @@ def node_wrapper(node: ex3.Node, synchronizer, exitevent):
 
         if node.elected:
             elapsed_time = (node.end_time-node.start_time)
-            logger.info("Took {0:.2f} ms to elect me.".format(elapsed_time*1000))
+            logger.debug("Took {0:.2f} ms to elect me.".format(elapsed_time*1000))
 
         # wait for all nodes to quit
         synchronizer.wait()
@@ -121,7 +121,7 @@ def main():
     try:
         for n in nodes:
             #proc = mp.Process(target=mplog.logged_call, daemon=True, name="Node-{0}".format(n.info.id),args=(log_queue, node_wrapper, n, synchronizer, exitevent))
-            proc = mp.Process(target=node_wrapper, name="Node-{0}".format(n.info.id),args=(n, synchronizer, exitevent))
+            proc = mp.Process(target=node_wrapper, name="Node-{0:06}".format(n.info.id),args=(n, synchronizer, exitevent))
             proc.start()
             logger.info("Stared Process {0}.".format(n.info.id))
             procs.append(proc)

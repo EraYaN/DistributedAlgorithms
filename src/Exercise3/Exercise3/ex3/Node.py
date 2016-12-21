@@ -56,6 +56,11 @@ class Node(object):
     start_time = None
     end_time = None
 
+    #Stats
+    stat_times_captured = 0
+    stat_sent_killcap = 0
+    stat_sent_ack = 0
+
     def __init__(self, info: NodeInfo, nodeinfos: dict, candidates_num_appox: int):
         self.info = info
         self.nodeinfos = nodeinfos
@@ -82,15 +87,15 @@ class Node(object):
             if self.candidate and capture_new_link:
                 new_link = self.untraversed[-1]
                 self.send(Message(self.info, self.nodeinfos[new_link], self.level, self.info.id))
-                pass#self.logger.debug("Sent capture attempt to {}.".format(new_link))
-
+                self.logger.debug("Sent capture attempt to {}.".format(new_link))
+                self.stat_sent_killcap += 1
             try:
                 message = self.q_rx.get(block=True, timeout=0.001) # waits for message, timeout is to reduce CPU load.
             except Empty:
                 pass
             else:
                 if self.candidate:
-                    # pass#self.logger.debug("Handled packet as candidate.")
+                    # self.logger.debug("Handled packet as candidate.")
                     capture_new_link = self.handle_candidate(message)
 
                     # Links exhausted, we are elected
@@ -100,25 +105,27 @@ class Node(object):
                         self.end_time = time.perf_counter()
                         exitevent.set()
                 else:
-                    # pass#self.logger.debug("Handled packet as ordinary.")
+                    # self.logger.debug("Handled packet as ordinary.")
                     self.handle_ordinary(message)
 
         if self.elected:
             elapsed_time = (self.end_time-self.start_time)
             self.logger.info("Run ended. Became elected in {0:.2f} ms.".format(elapsed_time*1000))
         else:
-            pass#self.logger.debug("Run ended.")
+            self.logger.debug("Run ended.")
+        self.logger.info("#Stats;id;{: 6};level;{: 6};times_captured;{: 6};sent_ack;{: 6};sent_killcap;{: 6}".format(self.info.id,self.level,self.stat_times_captured,self.stat_sent_ack,self.stat_sent_killcap))
 
     def handle_ordinary(self, message: Message):
         if message.level == self.level and message.id == self.owner_id:
-            pass#self.logger.debug("Received acknowledgement of kill attempt on behalf of {} from old father {}, changing father...".format(self.owner_id, self.father.id))
+            self.logger.debug("Received acknowledgement of kill attempt on behalf of {} from old father {}, changing father...".format(self.owner_id, self.father.id))
             self.father = self.potential_father
 
             self.send(Message(self.info, self.father, message.level, message.id))
-            pass#self.logger.debug("Sent acknowledgement to new father {0}.".format(self.father.id))
+            self.logger.debug("Sent acknowledgement to new father {0}.".format(self.father.id))
+            self.stat_sent_ack += 1
             return
 
-        pass#self.logger.debug("Received capture attempt from {}.".format(message.src.id))
+        self.logger.debug("Received capture attempt from {}.".format(message.src.id))
 
         if message.level > self.level or (message.level == self.level and message.id > self.owner_id):
             self.potential_father = message.src
@@ -127,34 +134,38 @@ class Node(object):
 
             if self.father == None:
                 self.father = self.potential_father
-                pass#self.logger.debug("Sent acknowledgement to new father {0}.".format(self.father.id))
+                self.logger.debug("Sent acknowledgement to new father {0}.".format(self.father.id))
+                self.stat_sent_ack += 1
+                self.stat_times_captured += 1
             else:
-                pass#self.logger.debug("Sent message attempting to kill old father {0} on behalf of {1}.".format(self.father.id, self.owner_id))
+                self.logger.debug("Sent message attempting to kill old father {0} on behalf of {1}.".format(self.father.id, self.owner_id))
+                self.stat_sent_killcap += 1
 
             self.send(Message(self.info, self.father, message.level, message.id))
             return
 
-        pass#self.logger.debug("Ignoring capture attempt from {0}, since ({1},{2}) < ({3},{4}).".format(message.src.id, message.level, message.id, self.level, self.owner_id))
+        self.logger.debug("Ignoring capture attempt from {0}, since ({1},{2}) < ({3},{4}).".format(message.src.id, message.level, message.id, self.level, self.owner_id))
 
     def handle_candidate(self, message: Message):
         if message.id == self.info.id:
             if self.killed:
-                pass#self.logger.debug("Ignoring acknowledgement for capture attempt from {}, since I was killed in the meantime.".format(message.src.id))
+                self.logger.debug("Ignoring acknowledgement for capture attempt from {}, since I was killed in the meantime.".format(message.src.id))
                 return False
             else:
                 self.level += 1
                 link_id = self.untraversed.pop()
-                pass#self.logger.debug("Received acknowledgement for capture attempt, captured {0}, {1} remaining.".format(link_id, len(self.untraversed)))
+                self.logger.debug("Received acknowledgement for capture attempt, captured {0}, {1} remaining.".format(link_id, len(self.untraversed)))
                 return True
 
         elif message.level < self.level or (message.level == self.level and message.id < self.info.id):
-            pass#self.logger.debug("Ignoring kill attempt from {0} on behalf of {1}, since ({2},{1}) < ({3},{4}).".format(message.src.id, message.id, message.level, self.level, self.info.id))
+            self.logger.debug("Ignoring kill attempt from {0} on behalf of {1}, since ({2},{1}) < ({3},{4}).".format(message.src.id, message.id, message.level, self.level, self.info.id))
             return False
 
         else:
             self.killed = True
             self.send(Message(self.info, message.src, message.level, message.id))
-            pass#self.logger.debug("Killed by {0} on behalf of {1}, since ({2},{1}) > ({3},{4}), sent acknowledgement.".format(message.src.id, message.id, message.level, self.level, self.info.id))
+            self.logger.debug("Killed by {0} on behalf of {1}, since ({2},{1}) > ({3},{4}), sent acknowledgement.".format(message.src.id, message.id, message.level, self.level, self.info.id))
+            self.stat_sent_ack += 1
             return False
 
     def send(self, message):
@@ -232,7 +243,7 @@ class Node(object):
     #            self.server_socket.send_string('') # Send protocol ACK so execution can continue
     #            if type(message) is Message:
     #                self.q_rx.put(message)
-    #                # pass#self.logger.debug("[SERVER] got packet from {0}.".format(message.src.id))
+    #                # self.logger.debug("[SERVER] got packet from {0}.".format(message.src.id))
     #            else:
     #                self.logger.warning("[SERVER] got bad packet.")
     #    else:
@@ -245,5 +256,5 @@ class Node(object):
     #        if message.dst.id in self.sockets:
     #            client_socket = self.sockets.get(message.dst.id)
     #            client_socket.send_pyobj(message, flags=0)
-    #            # pass#self.logger.debug("[CLIENT] sent packet to {0}.".format(message.dst.id))
+    #            # self.logger.debug("[CLIENT] sent packet to {0}.".format(message.dst.id))
     #            ack = client_socket.recv_string() # Recieve and discard protocol ACK
