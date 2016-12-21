@@ -12,6 +12,8 @@ def router(frontend_port: int, backend_port: int, routerexit: Event):
     context = zmq.Context()
     frontend = context.socket(zmq.ROUTER)
     backend = context.socket(zmq.DEALER)
+    frontend.identity=b'\xFE\xFE\xFE\xFE'
+    backend.identity=b'\xEF\xEF\xEF\xEF'
     frontend.bind("tcp://*:{0}".format(frontend_port))
     backend.bind("tcp://*:{0}".format(backend_port))
 
@@ -35,4 +37,5 @@ def router(frontend_port: int, backend_port: int, routerexit: Event):
             message = backend.recv_multipart()
             frontend.send_multipart(message)
             logger.log(5,"Sent message to frontend.")
+    #zmq.proxy(frontend, backend)
     logger.info("Router Quit")

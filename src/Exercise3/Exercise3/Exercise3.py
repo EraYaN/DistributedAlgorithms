@@ -116,7 +116,7 @@ def main():
     logger.log(1000,"Starting system.")
 
     all_systems = [
-        {"host":"192.168.178.3","transport":ex3.Transport.TCP,"startport":startport,"number":NUM_NODES},
+        #{"host":"192.168.178.3","transport":ex3.Transport.TCP,"startport":startport,"number":NUM_NODES},
         {"host":"192.168.178.13","transport":ex3.Transport.TCP,"startport":startport,"number":NUM_NODES}
     ]
 

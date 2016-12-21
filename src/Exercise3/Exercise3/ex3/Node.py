@@ -120,7 +120,7 @@ class Node(object):
 
     def random_delay(self):
         # Random delay between 0 and 0.1 seconds
-        time.sleep(random.random()/10)
+        time.sleep(random.random())
 
     def handle_ordinary(self, message: Message):
         if message.level == self.level and message.id == self.owner_id:
@@ -183,17 +183,17 @@ class Node(object):
 
     def start_server(self):
         # Setup listener:
-        self.server_socket = self.context.socket(zmq.ROUTER)
-        self.server_socket.identity = struct.pack('I',self.info.id)
-        self.server_socket.connect(self.dealeruri)
+        self.server_socket = self.context.socket(zmq.DEALER)
+        self.server_socket.identity = struct.pack('i',self.info.id)
+        self.server_socket.connect(self.routeruri)
         # Run Async
         self.server_thread()
 
     def connect_client(self):
         # Setup connection
-        self.client_socket = self.context.socket(zmq.DEALER)
-        self.client_socket.identity = struct.pack('I',self.info.id)
-        self.client_socket.connect(self.routeruri)
+        self.client_socket = self.context.socket(zmq.ROUTER)
+        self.client_socket.identity = struct.pack('i',-self.info.id)
+        self.client_socket.connect(self.dealeruri)
         # Run Async
         self.client_thread()
 
@@ -202,11 +202,28 @@ class Node(object):
         if self.server_socket is not None:
             while True:
                 envelope = self.server_socket.recv_multipart(flags=0)
-                message = pickle.loads(envelope[3])#self.server_socket.recv_pyobj(flags=0)
+                #print(envelope)
+                found_null = False
+                i = 0
+                message = None
+                for part in envelope:
+                    if found_null:
+                        message = pickle.loads(part)#self.server_socket.recv_pyobj(flags=0)
+                        break
+                    else:
+                        if part == b'':
+                            found_null = True # next is app data.
+                    i += 1
+
+
                 if type(message) is Message:
                     self.random_delay()
-                    self.q_rx.put(message)
-                    self.logger.debug("[SERVER] received packet to node {0}.".format(message.dst.id))
+                    if self.info.id == message.dst.id:
+                        self.q_rx.put(message)
+                    else:
+                        self.logger.error("[SERVER] Got packet for someone else.")
+                    self.logger.debug("[SERVER] received packet ({}) from node {} for node {} ({}), data was at index {}.".format(message.rand,message.src.id,message.dst.id,'good' if self.info.id ==message.dst.id else 'bad',i))
+
                 else:
                     self.logger.warning("[SERVER] got bad packet.")
         else:
@@ -218,9 +235,12 @@ class Node(object):
             while True:
                 message = self.q_tx.get(block=True) # waits for message
                 self.random_delay()
-                self.client_socket.send(b"", zmq.SNDMORE)
+                self.client_socket.send(b"\xEF\xEF\xEF\xEF", flags=zmq.SNDMORE) # Dealer IDentity
+                self.client_socket.send(struct.pack('i',message.dst.id), flags=zmq.SNDMORE) # Destination
+                self.client_socket.send(b"", flags=zmq.SNDMORE)
                 self.client_socket.send_pyobj(message, flags=0)
-                self.logger.debug("[CLIENT] sent packet to node {0}.".format(message.dst.id))
+                #self.client_socket.recv_string()
+                self.logger.debug("[CLIENT] sent packet ({}) to node {}.".format(message.rand,message.dst.id))
         else:
             self.logger.warning("[CLIENT] can not start thread.")
 
