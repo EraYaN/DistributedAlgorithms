@@ -41,6 +41,9 @@
     </Compile>
     <Compile Include="Exercise3.py" />
     <Compile Include="mplog.py" />
+    <Compile Include="router.py">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Content Include="requirements.txt" />

@@ -13,6 +13,7 @@ import zmq
 import os
 import struct
 import random
+import pickle
 
 from ex3 import NodeInfo
 from ex3 import Message
@@ -28,6 +29,7 @@ class Node(object):
     nodeinfos = {}
     sockets = {}
     server_socket = None
+    client_socket = None
 
     # Debug facilities
     logger = None
@@ -79,7 +81,7 @@ class Node(object):
             if self.candidate and capture_new_link:
                 new_link = self.untraversed[-1]
                 self.send(Message(self.info, self.nodeinfos[new_link], self.level, self.info.id))
-                self.logger.debug("Sent capture attempt to {}.".format(new_link))
+                pass#self.logger.debug("Sent capture attempt to {}.".format(new_link))
 
             try:
                 message = self.q_rx.get(block=True, timeout=0.01) # waits for message, timeout is to reduce CPU load.
@@ -87,7 +89,7 @@ class Node(object):
                 pass
             else:
                 if self.candidate:
-                    # self.logger.debug("Handled packet as candidate.")
+                    # pass#self.logger.debug("Handled packet as candidate.")
                     capture_new_link = self.handle_candidate(message)
 
                     # Links exhausted, we are elected
@@ -97,24 +99,25 @@ class Node(object):
                         self.end_time = time.perf_counter()
                         exitevent.set()
                 else:
-                    # self.logger.debug("Handled packet as ordinary.")
+                    # pass#self.logger.debug("Handled packet as ordinary.")
                     self.handle_ordinary(message)
 
         if self.elected:
-            self.logger.debug("Run ended. Became elected.")
+            elapsed_time = (self.end_time-self.start_time)
+            self.logger.info("Run ended. Became elected in {0:.2f} ms.".format(elapsed_time*1000))
         else:
-            self.logger.debug("Run ended.")
+            pass#self.logger.debug("Run ended.")
 
     def handle_ordinary(self, message: Message):
         if message.level == self.level and message.id == self.owner_id:
-            self.logger.debug("Received acknowledgement of kill attempt on behalf of {} from old father {}, changing father...".format(self.owner_id, self.father.id))
+            pass#self.logger.debug("Received acknowledgement of kill attempt on behalf of {} from old father {}, changing father...".format(self.owner_id, self.father.id))
             self.father = self.potential_father
 
             self.send(Message(self.info, self.father, message.level, message.id))
-            self.logger.debug("Sent acknowledgement to new father {0}.".format(self.father.id))
+            pass#self.logger.debug("Sent acknowledgement to new father {0}.".format(self.father.id))
             return
 
-        self.logger.debug("Received capture attempt from {}.".format(message.src.id))
+        pass#self.logger.debug("Received capture attempt from {}.".format(message.src.id))
 
         if message.level > self.level or (message.level == self.level and message.id > self.owner_id):
             self.potential_father = message.src
@@ -123,72 +126,66 @@ class Node(object):
 
             if self.father == None:
                 self.father = self.potential_father
-                self.logger.debug("Sent acknowledgement to new father {0}.".format(self.father.id))
+                pass#self.logger.debug("Sent acknowledgement to new father {0}.".format(self.father.id))
             else:
-                self.logger.debug("Sent message attempting to kill old father {0} on behalf of {1}.".format(self.father.id, self.owner_id))
+                pass#self.logger.debug("Sent message attempting to kill old father {0} on behalf of {1}.".format(self.father.id, self.owner_id))
 
             self.send(Message(self.info, self.father, message.level, message.id))
             return
 
-        self.logger.debug("Ignoring capture attempt from {0}, since ({1},{2}) < ({3},{4}).".format(message.src.id, message.level, message.id, self.level, self.owner_id))
+        pass#self.logger.debug("Ignoring capture attempt from {0}, since ({1},{2}) < ({3},{4}).".format(message.src.id, message.level, message.id, self.level, self.owner_id))
 
     def handle_candidate(self, message: Message):
         if message.id == self.info.id:
             if self.killed:
-                self.logger.debug("Ignoring acknowledgement for capture attempt from {}, since I was killed in the meantime.".format(message.src.id))
+                pass#self.logger.debug("Ignoring acknowledgement for capture attempt from {}, since I was killed in the meantime.".format(message.src.id))
                 return False
             else:
                 self.level += 1
                 link_id = self.untraversed.pop()
-                self.logger.info("Received acknowledgement for capture attempt, captured {0}, {1} remaining.".format(link_id, len(self.untraversed)))
+                pass#self.logger.debug("Received acknowledgement for capture attempt, captured {0}, {1} remaining.".format(link_id, len(self.untraversed)))
                 return True
 
         elif message.level < self.level or (message.level == self.level and message.id < self.info.id):
-            self.logger.debug("Ignoring kill attempt from {0} on behalf of {1}, since ({2},{1}) < ({3},{4}).".format(message.src.id, message.id, message.level, self.level, self.info.id))
+            pass#self.logger.debug("Ignoring kill attempt from {0} on behalf of {1}, since ({2},{1}) < ({3},{4}).".format(message.src.id, message.id, message.level, self.level, self.info.id))
             return False
 
         else:
             self.killed = True
             self.send(Message(self.info, message.src, message.level, message.id))
-            self.logger.debug("Killed by {0} on behalf of {1}, since ({2},{1}) > ({3},{4}), sent acknowledgement.".format(message.src.id, message.id, message.level, self.level, self.info.id))
+            pass#self.logger.debug("Killed by {0} on behalf of {1}, since ({2},{1}) > ({3},{4}), sent acknowledgement.".format(message.src.id, message.id, message.level, self.level, self.info.id))
             return False
 
     def send(self, message):
         self.q_tx.put(message)
 
     def setup_logging(self):
-        self.logger = logging.getLogger('sub')
+        self.logger = logging.getLogger('sub{0}'.format(self.info.id))
 
     def start_server(self):
         # Setup listener:
-        self.server_socket = self.context.socket(zmq.REP)
-        self.server_socket.bind(self.info.bind_uri)
+        self.server_socket = self.context.socket(zmq.ROUTER)
+        self.server_socket.identity = struct.pack('I',self.info.id)
+        self.server_socket.connect("tcp://localhost:32515")
         # Run Async
         self.server_thread()
 
-    def connect_clients(self):
-        # Setup connections, remeber nodeinfos is a dict so for ...  in return
-        # keys
-        for remote_id in self.nodeinfos:
-            if remote_id == self.info.id:
-                # skip self
-                continue
-            remote_info = self.nodeinfos.get(remote_id)
-            client_socket = self.context.socket(zmq.REQ)
-            client_socket.connect(remote_info.connect_uri)
-            self.sockets[remote_info.id] = client_socket
-        #Run Async
+    def connect_client(self):
+        # Setup connection
+        self.client_socket = self.context.socket(zmq.DEALER)
+        self.client_socket.identity = struct.pack('I',self.info.id)
+        self.client_socket.connect("tcp://localhost:32514")
+        # Run Async
         self.client_thread()
 
     @threaded
     def server_thread(self):
         if self.server_socket is not None:
             while True:
-                message = self.server_socket.recv_pyobj(flags=0)
-                self.server_socket.send_string('') # Send protocol ACK so execution can continue
+                envelope = self.server_socket.recv_multipart(flags=0)
+                message = pickle.loads(envelope[3])#self.server_socket.recv_pyobj(flags=0)
                 if type(message) is Message:
                     self.q_rx.put(message)
-                    # self.logger.debug("[SERVER] got packet from {0}.".format(message.src.id))
                 else:
                     self.logger.warning("[SERVER] got bad packet.")
         else:
@@ -196,10 +193,56 @@ class Node(object):
 
     @threaded
     def client_thread(self):
-        while True:
-            message = self.q_tx.get(block=True) # waits for message
-            if message.dst.id in self.sockets:
-                client_socket = self.sockets.get(message.dst.id)
-                client_socket.send_pyobj(message, flags=0)
-                # self.logger.debug("[CLIENT] sent packet to {0}.".format(message.dst.id))
-                ack = client_socket.recv_string() # Recieve and discard protocol ACK
+        if self.server_socket is not None:
+            while True:
+                message = self.q_tx.get(block=True) # waits for message
+                self.client_socket.send(b"", zmq.SNDMORE)
+                self.client_socket.send_pyobj(message, flags=0)
+        else:
+            self.logger.warning("[CLIENT] can not start thread.")
+
+
+    #def start_server(self):
+    #    # Setup listener:
+    #    self.server_socket = self.context.socket(zmq.REP)
+    #    self.server_socket.bind(self.info.bind_uri)
+    #    # Run Async
+    #    self.server_thread()
+
+    #def connect_clients(self):
+    #    # Setup connections, remeber nodeinfos is a dict so for ...  in return
+    #    # keys
+    #    for remote_id in self.nodeinfos:
+    #        if remote_id == self.info.id:
+    #            # skip self
+    #            continue
+    #        remote_info = self.nodeinfos.get(remote_id)
+    #        client_socket = self.context.socket(zmq.REQ)
+    #        client_socket.connect(remote_info.connect_uri)
+    #        self.sockets[remote_info.id] = client_socket
+    #    #Run Async
+    #    self.client_thread()
+
+    #@threaded
+    #def server_thread(self):
+    #    if self.server_socket is not None:
+    #        while True:
+    #            message = self.server_socket.recv_pyobj(flags=0)
+    #            self.server_socket.send_string('') # Send protocol ACK so execution can continue
+    #            if type(message) is Message:
+    #                self.q_rx.put(message)
+    #                # pass#self.logger.debug("[SERVER] got packet from {0}.".format(message.src.id))
+    #            else:
+    #                self.logger.warning("[SERVER] got bad packet.")
+    #    else:
+    #        self.logger.warning("[SERVER] can not start thread.")
+
+    #@threaded
+    #def client_thread(self):
+    #    while True:
+    #        message = self.q_tx.get(block=True) # waits for message
+    #        if message.dst.id in self.sockets:
+    #            client_socket = self.sockets.get(message.dst.id)
+    #            client_socket.send_pyobj(message, flags=0)
+    #            # pass#self.logger.debug("[CLIENT] sent packet to {0}.".format(message.dst.id))
+    #            ack = client_socket.recv_string() # Recieve and discard protocol ACK
