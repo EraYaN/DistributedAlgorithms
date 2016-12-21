@@ -87,6 +87,8 @@ class Node(object):
             capture_new_link = True
         self.start_time = time.perf_counter()
         while not exitevent.is_set():
+            # Random delay between 0 and 0.1 seconds
+            #time.sleep(random.random()/10)
             # Attempt to capture next link if required.
             if self.candidate and capture_new_link:
                 new_link = self.untraversed[-1]
