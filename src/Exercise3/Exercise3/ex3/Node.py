@@ -59,8 +59,12 @@ class Node(object):
 
     #Stats
     stat_times_captured = 0
-    stat_sent_killcap = 0
+    stat_sent_cap = 0
+    stat_recv_cap = 0
+    stat_sent_kill = 0
+    stat_recv_kill = 0
     stat_sent_ack = 0
+    stat_recv_ack = 0
 
     def __init__(self, info: NodeInfo, nodeinfos: dict, candidates_num_appox: int, routeruri: str, dealeruri: str):
         self.info = info
@@ -83,19 +87,23 @@ class Node(object):
             self.candidate = True
             capture_new_link = True
         self.start_time = time.perf_counter()
-        while not exitevent.is_set():
+
+        while True:
+
             self.random_delay()
             # Attempt to capture next link if required.
             if self.candidate and capture_new_link:
                 new_link = self.untraversed[-1]
                 self.send(Message(self.info, self.nodeinfos[new_link], self.level, self.info.id))
                 self.logger.debug("Sent capture attempt to {}.".format(new_link))
-                self.stat_sent_killcap += 1
+                self.stat_sent_cap += 1
             try:
-                message = self.q_rx.get(block=True, timeout=0.001) # waits for message, timeout is to reduce CPU load.
+                self.logger.debug("Waiting for packet.")
+                message = self.q_rx.get(block=True, timeout=0.01) # waits for message, timeout is to reduce CPU load.
+                self.logger.debug("Got packet.")
                 self.random_delay()
             except Empty:
-                pass
+                self.logger.debug("Timedout.")
             else:
                 if self.candidate:
                     # self.logger.debug("Handled packet as candidate.")
@@ -108,23 +116,39 @@ class Node(object):
                         self.end_time = time.perf_counter()
                         exitevent.set()
                 else:
-                    # self.logger.debug("Handled packet as ordinary.")
+                    self.logger.debug("Handled packet as ordinary.")
                     self.handle_ordinary(message)
+            if exitevent.is_set():
+                self.logger.info("#Stats;id;{: 3};level;{: 3};times_captured;{: 3};sent_ack;{: 3};recv_ack;{: 3};sent_kill;{: 3};recv_kill;{: 3};sent_cap;{: 3};recv_cap;{: 3}".format(
+                    self.info.id,
+                    self.level,
+                    self.stat_times_captured,
+                    self.stat_sent_ack,
+                    self.stat_recv_ack,
+                    self.stat_sent_kill,
+                    self.stat_recv_kill,
+                    self.stat_sent_cap,
+                    self.stat_recv_cap
+                    )
+                )
+                break
+
+
 
         if self.elected:
             elapsed_time = (self.end_time-self.start_time)
             self.logger.info("Run ended. Became elected in {0:.2f} ms.".format(elapsed_time*1000))
         else:
             self.logger.debug("Run ended.")
-        self.logger.info("#Stats;id;{: 6};level;{: 6};times_captured;{: 6};sent_ack;{: 6};sent_killcap;{: 6}".format(self.info.id,self.level,self.stat_times_captured,self.stat_sent_ack,self.stat_sent_killcap))
 
     def random_delay(self):
         # Random delay between 0 and 0.1 seconds
-        time.sleep(random.random()/10)
+        time.sleep(random.random()*1.5)
 
     def handle_ordinary(self, message: Message):
         if message.level == self.level and message.id == self.owner_id:
             self.logger.debug("Received acknowledgement of kill attempt on behalf of {} from old father {}, changing father...".format(self.owner_id, self.father.id))
+            self.stat_recv_ack += 1
             self.father = self.potential_father
 
             self.send(Message(self.info, self.father, message.level, message.id))
@@ -133,6 +157,7 @@ class Node(object):
             return
 
         self.logger.debug("Received capture attempt from {}.".format(message.src.id))
+        self.stat_recv_cap += 1
 
         if message.level > self.level or (message.level == self.level and message.id > self.owner_id):
             self.potential_father = message.src
@@ -146,7 +171,7 @@ class Node(object):
                 self.stat_times_captured += 1
             else:
                 self.logger.debug("Sent message attempting to kill old father {0} on behalf of {1}.".format(self.father.id, self.owner_id))
-                self.stat_sent_killcap += 1
+                self.stat_sent_kill += 1
 
             self.send(Message(self.info, self.father, message.level, message.id))
             return
@@ -157,15 +182,18 @@ class Node(object):
         if message.id == self.info.id:
             if self.killed:
                 self.logger.debug("Ignoring acknowledgement for capture attempt from {}, since I was killed in the meantime.".format(message.src.id))
+                self.stat_recv_ack += 1
                 return False
             else:
                 self.level += 1
                 link_id = self.untraversed.pop()
                 self.logger.debug("Received acknowledgement for capture attempt, captured node {0}, {1} remaining.".format(link_id, len(self.untraversed)))
+                self.stat_recv_ack += 1
                 return True
 
         elif message.level < self.level or (message.level == self.level and message.id < self.info.id):
             self.logger.debug("Ignoring kill attempt from {0} on behalf of {1}, since ({2},{1}) < ({3},{4}).".format(message.src.id, message.id, message.level, self.level, self.info.id))
+            self.stat_recv_kill += 1
             return False
 
         else:
@@ -173,6 +201,7 @@ class Node(object):
             self.send(Message(self.info, message.src, message.level, message.id))
             self.logger.debug("Killed by {0} on behalf of {1}, since ({2},{1}) > ({3},{4}), sent acknowledgement.".format(message.src.id, message.id, message.level, self.level, self.info.id))
             self.stat_sent_ack += 1
+            self.stat_recv_kill += 1
             return False
 
     def send(self, message):
@@ -244,48 +273,3 @@ class Node(object):
         else:
             self.logger.warning("[CLIENT] can not start thread.")
 
-
-    #def start_server(self):
-    #    # Setup listener:
-    #    self.server_socket = self.context.socket(zmq.REP)
-    #    self.server_socket.bind(self.info.bind_uri)
-    #    # Run Async
-    #    self.server_thread()
-
-    #def connect_clients(self):
-    #    # Setup connections, remeber nodeinfos is a dict so for ...  in return
-    #    # keys
-    #    for remote_id in self.nodeinfos:
-    #        if remote_id == self.info.id:
-    #            # skip self
-    #            continue
-    #        remote_info = self.nodeinfos.get(remote_id)
-    #        client_socket = self.context.socket(zmq.REQ)
-    #        client_socket.connect(remote_info.connect_uri)
-    #        self.sockets[remote_info.id] = client_socket
-    #    #Run Async
-    #    self.client_thread()
-
-    #@threaded
-    #def server_thread(self):
-    #    if self.server_socket is not None:
-    #        while True:
-    #            message = self.server_socket.recv_pyobj(flags=0)
-    #            self.server_socket.send_string('') # Send protocol ACK so execution can continue
-    #            if type(message) is Message:
-    #                self.q_rx.put(message)
-    #                # self.logger.debug("[SERVER] got packet from {0}.".format(message.src.id))
-    #            else:
-    #                self.logger.warning("[SERVER] got bad packet.")
-    #    else:
-    #        self.logger.warning("[SERVER] can not start thread.")
-
-    #@threaded
-    #def client_thread(self):
-    #    while True:
-    #        message = self.q_tx.get(block=True) # waits for message
-    #        if message.dst.id in self.sockets:
-    #            client_socket = self.sockets.get(message.dst.id)
-    #            client_socket.send_pyobj(message, flags=0)
-    #            # self.logger.debug("[CLIENT] sent packet to {0}.".format(message.dst.id))
-    #            ack = client_socket.recv_string() # Recieve and discard protocol ACK

@@ -19,7 +19,7 @@ from math import floor
 multiprocessing_logging.install_mp_handler()
 
 FORMAT = '%(asctime)s - %(processName)s - %(levelname)s - %(message)s'
-logging.basicConfig(level=logging.INFO,format=FORMAT)
+logging.basicConfig(level=logging.DEBUG,format=FORMAT)
 logger = logging.getLogger('main')
 #filehandler = logging.FileHandler(filename='exercise3.log',mode='w')
 #filehandler.setLevel(logging.DEBUG)
@@ -30,8 +30,8 @@ logger = logging.getLogger('main')
 
 
 exitevent = None
-NUM_NODES = 250
-AVG_CANDIDATES = 25#floor(NUM_NODES/5)
+NUM_NODES = 4
+AVG_CANDIDATES = 1#floor(NUM_NODES/5)
 CURRENT_HOST = '192.168.178.13'
 LOCALHOST = 'localhost'
 
@@ -65,6 +65,7 @@ def node_wrapper(node: ex3.Node, synchronizer, exitevent):
         synchronizer.wait()
         if node.info.id == 1:
             logger.info("All processes connected.")
+        
         node.run(exitevent)
 
         logger.debug("I'm elected: {0}.".format("yes" if node.elected else 'no'))
@@ -116,8 +117,8 @@ def main():
     logger.log(1000,"Starting system.")
 
     all_systems = [
-        #{"host":"192.168.178.3","transport":ex3.Transport.TCP,"startport":startport,"number":NUM_NODES},
-        {"host":"192.168.178.13","transport":ex3.Transport.TCP,"startport":startport,"number":NUM_NODES}
+        {"host":"192.168.178.13","transport":ex3.Transport.TCP,"startport":startport,"number":NUM_NODES},
+        #{"host":"192.168.178.3","transport":ex3.Transport.TCP,"startport":startport,"number":NUM_NODES}
     ]
 
     nis = {}
