@@ -31,7 +31,7 @@ logger = logging.getLogger('main')
 
 exitevent = None
 NUM_NODES = 100
-AVG_CANDIDATES = floor(NUM_NODES/5)
+AVG_CANDIDATES = 4#floor(NUM_NODES/5)
 
 def node_wrapper(node: ex3.Node, synchronizer, exitevent):
     """Run function under the pool
@@ -65,7 +65,7 @@ def node_wrapper(node: ex3.Node, synchronizer, exitevent):
             logger.info("All processes connected.")
         node.run(exitevent)
 
-        logger.info("I'm elected: {0}.".format("yes" if node.elected else 'no'))
+        logger.debug("I'm elected: {0}.".format("yes" if node.elected else 'no'))
 
         if node.elected:
             elapsed_time = (node.end_time-node.start_time)

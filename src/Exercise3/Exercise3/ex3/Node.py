@@ -65,11 +65,12 @@ class Node(object):
         random.shuffle(self.untraversed)
 
     def run(self,exitevent):
-        random_int = struct.unpack('I',os.urandom(4))[0]
-        maxint = (2 ** 32) - 1
-        random_double = float(random_int) / (maxint) # random between 0 and 1
+        #random_int = struct.unpack('I',os.urandom(4))[0]
+        #maxint = (2 ** 32) - 1
+        #random_double = float(random_int) / (maxint) # random between 0 and 1
         # Node #1 is always candidate
-        if random_double < self.candidates_num_appox / len(self.nodeinfos) or self.info.id == 1:
+        #if random_double < self.candidates_num_appox / len(self.nodeinfos) or self.info.id == 1:
+        if self.info.id <= self.candidates_num_appox:
             self.logger.info("Became candidate, going to attempt to capture {0} nodes.".format(len(self.untraversed)))
             self.candidate = True
             capture_new_link = True
@@ -84,7 +85,7 @@ class Node(object):
                 pass#self.logger.debug("Sent capture attempt to {}.".format(new_link))
 
             try:
-                message = self.q_rx.get(block=True, timeout=0.01) # waits for message, timeout is to reduce CPU load.
+                message = self.q_rx.get(block=True, timeout=0.001) # waits for message, timeout is to reduce CPU load.
             except Empty:
                 pass
             else:
