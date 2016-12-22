@@ -88,9 +88,7 @@ class Node(object):
             capture_new_link = True
         self.start_time = time.perf_counter()
 
-        while True:
-
-            self.random_delay()
+        while not exitevent.is_set():
             # Attempt to capture next link if required.
             if self.candidate and capture_new_link:
                 new_link = self.untraversed[-1]
@@ -98,12 +96,10 @@ class Node(object):
                 self.logger.debug("Sent capture attempt to {}.".format(new_link))
                 self.stat_sent_cap += 1
             try:
-                self.logger.debug("Waiting for packet.")
-                message = self.q_rx.get(block=True, timeout=0.01) # waits for message, timeout is to reduce CPU load.
-                self.logger.debug("Got packet.")
-                self.random_delay()
+                message = self.q_rx.get(block=True, timeout=0.05) # waits for message, timeout is to reduce CPU load.
             except Empty:
-                self.logger.debug("Timedout.")
+                if self.candidate:
+                    capture_new_link = False
             else:
                 if self.candidate:
                     # self.logger.debug("Handled packet as candidate.")
@@ -118,8 +114,14 @@ class Node(object):
                 else:
                     self.logger.debug("Handled packet as ordinary.")
                     self.handle_ordinary(message)
-            if exitevent.is_set():
-                self.logger.info("#Stats;id;{: 3};level;{: 3};times_captured;{: 3};sent_ack;{: 3};recv_ack;{: 3};sent_kill;{: 3};recv_kill;{: 3};sent_cap;{: 3};recv_cap;{: 3}".format(
+
+        if self.elected:
+            elapsed_time = (self.end_time-self.start_time)
+            self.logger.info("Run ended. Became elected in {0:.2f} ms.".format(elapsed_time*1000))
+        else:
+            self.logger.debug("Run ended.")
+
+        self.logger.info("#Stats;id;{: 3};level;{: 3};times_captured;{: 3};sent_ack;{: 3};recv_ack;{: 3};sent_kill;{: 3};recv_kill;{: 3};sent_cap;{: 3};recv_cap;{: 3}".format(
                     self.info.id,
                     self.level,
                     self.stat_times_captured,
@@ -131,19 +133,10 @@ class Node(object):
                     self.stat_recv_cap
                     )
                 )
-                break
-
-
-
-        if self.elected:
-            elapsed_time = (self.end_time-self.start_time)
-            self.logger.info("Run ended. Became elected in {0:.2f} ms.".format(elapsed_time*1000))
-        else:
-            self.logger.debug("Run ended.")
 
     def random_delay(self):
         # Random delay between 0 and 0.1 seconds
-        time.sleep(random.random()*1.5)
+        time.sleep(random.random()/10)
 
     def handle_ordinary(self, message: Message):
         if message.level == self.level and message.id == self.owner_id:
@@ -251,7 +244,7 @@ class Node(object):
                         self.q_rx.put(message)
                     else:
                         self.logger.error("[SERVER] Got packet for someone else.")
-                    self.logger.debug("[SERVER] received packet ({}) from node {} for node {} ({}), data was at index {}.".format(message.rand,message.src.id,message.dst.id,'good' if self.info.id ==message.dst.id else 'bad',i))
+                    self.logger.log(5,"[SERVER] received packet ({}) from node {} for node {} ({}), data was at index {}.".format(message.rand,message.src.id,message.dst.id,'good' if self.info.id ==message.dst.id else 'bad',i))
 
                 else:
                     self.logger.warning("[SERVER] got bad packet.")
@@ -269,7 +262,7 @@ class Node(object):
                 self.client_socket.send(b"", flags=zmq.SNDMORE)
                 self.client_socket.send_pyobj(message, flags=0)
                 #self.client_socket.recv_string()
-                self.logger.debug("[CLIENT] sent packet ({}) to node {}.".format(message.rand,message.dst.id))
+                self.logger.log(5,"[CLIENT] sent packet ({}) to node {}.".format(message.rand,message.dst.id))
         else:
             self.logger.warning("[CLIENT] can not start thread.")
 

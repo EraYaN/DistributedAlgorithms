@@ -65,7 +65,7 @@ def node_wrapper(node: ex3.Node, synchronizer, exitevent):
         synchronizer.wait()
         if node.info.id == 1:
             logger.info("All processes connected.")
-        
+
         node.run(exitevent)
 
         logger.debug("I'm elected: {0}.".format("yes" if node.elected else 'no'))
@@ -150,7 +150,6 @@ def main():
             procs.append(proc)
 
         logger.info("Started nodes.")
-
 
         all(map(ProcessJoin, procs))
     except (KeyboardInterrupt, SystemExit):
