@@ -16,10 +16,12 @@ from router import router
 
 from math import floor
 
+import os
+
 multiprocessing_logging.install_mp_handler()
 
 FORMAT = '%(asctime)s - %(processName)s - %(levelname)s - %(message)s'
-logging.basicConfig(level=logging.DEBUG,format=FORMAT)
+logging.basicConfig(level=logging.INFO,format=FORMAT)
 logger = logging.getLogger('main')
 #filehandler = logging.FileHandler(filename='exercise3.log',mode='w')
 #filehandler.setLevel(logging.DEBUG)
@@ -46,6 +48,7 @@ def node_wrapper(node: ex3.Node, synchronizer, exitevent):
     try:
         # Ignore Keyboard Int
         signal.signal(signal.SIGINT, signal.SIG_IGN)
+        logger.info("PID: {0}".format(os.getpid()))
         # wait for all process starts
         synchronizer.wait()
         if node.info.id == 1:
@@ -90,7 +93,10 @@ def node_wrapper(node: ex3.Node, synchronizer, exitevent):
 
 def ProcessJoin(x):
     if type(x) is mp.Process:
-        logger.info("Joined Process {0}.".format(x.name))
+        if x.is_alive():
+            logger.info("Joined Process {0}.".format(x.name))
+        else:
+            logger.info("Process {0} already dead.".format(x.name))
     else:
         logger.info("Joined Process")
     x.join()
@@ -98,7 +104,7 @@ def ProcessJoin(x):
 def main():
     premature_exit = False
     print("System starting.")
-
+    logger.info("PID: {0}".format(os.getpid()))
     startport = 32516
     routerport = 32514
     dealerport = 32515
@@ -110,7 +116,7 @@ def main():
 
     if routerinfo.local or dealerinfo.local:
         routerevent = mp.Event()
-        router_proc = mp.Process(target=router, name="Router", args=(routerport,dealerport,routerevent))
+        router_proc = mp.Process(target=router, name="RouterProcs", args=(routerport,dealerport,routerevent))
 
     router_proc.start()
 
@@ -151,7 +157,8 @@ def main():
 
         logger.info("Started nodes.")
 
-        all(map(ProcessJoin, procs))
+        for p in procs:
+            ProcessJoin(p)
     except (KeyboardInterrupt, SystemExit):
         exitevent.set()
         logger.info("Forced Exit.")

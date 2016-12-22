@@ -14,6 +14,7 @@ import os
 import struct
 import random
 import pickle
+import copy
 
 from ex3 import NodeInfo
 from ex3 import Message
@@ -66,6 +67,9 @@ class Node(object):
     stat_sent_ack = 0
     stat_recv_ack = 0
 
+    # DEBUG
+    quitting = False
+
     def __init__(self, info: NodeInfo, nodeinfos: dict, candidates_num_appox: int, routeruri: str, dealeruri: str):
         self.info = info
         self.nodeinfos = nodeinfos
@@ -74,7 +78,7 @@ class Node(object):
         self.dealeruri = dealeruri
 
         self.untraversed = [id for id in self.nodeinfos if id != self.info.id]
-        random.shuffle(self.untraversed)
+        #random.shuffle(self.untraversed)
 
     def run(self,exitevent):
         #random_int = struct.unpack('I',os.urandom(4))[0]
@@ -88,7 +92,7 @@ class Node(object):
             capture_new_link = True
         self.start_time = time.perf_counter()
 
-        while not exitevent.is_set():
+        while not self.quitting and not exitevent.is_set():
             # Attempt to capture next link if required.
             if self.candidate and capture_new_link:
                 new_link = self.untraversed[-1]
@@ -97,6 +101,10 @@ class Node(object):
                 self.stat_sent_cap += 1
             try:
                 message = self.q_rx.get(block=True, timeout=0.05) # waits for message, timeout is to reduce CPU load.
+                if message.done == True:
+                    self.logger.debug("Got broadcast message from elected node.")
+                    self.quitting=True
+                    break;
             except Empty:
                 if self.candidate:
                     capture_new_link = False
@@ -110,7 +118,9 @@ class Node(object):
                         self.elected = True
                         self.logger.info("Elected!")
                         self.end_time = time.perf_counter()
-                        exitevent.set()
+                        self.quitting = True
+                        time.sleep(0.5)
+                        self.broadcast(Message(self.info,self.info,self.level,self.info.id,True))
                 else:
                     self.logger.debug("Handled packet as ordinary.")
                     self.handle_ordinary(message)
@@ -136,7 +146,8 @@ class Node(object):
 
     def random_delay(self):
         # Random delay between 0 and 0.1 seconds
-        time.sleep(random.random()/10)
+        time.sleep(0.025)#random.random()/10)
+        #pass
 
     def handle_ordinary(self, message: Message):
         if message.level == self.level and message.id == self.owner_id:
@@ -199,6 +210,15 @@ class Node(object):
 
     def send(self, message):
         self.q_tx.put(message)
+
+    def broadcast(self, message):
+        for id in self.nodeinfos:
+            ni = self.nodeinfos.get(id)
+            if id == self.info.id:
+                continue
+            tmp = copy.deepcopy(message)
+            tmp.dst = ni
+            self.q_tx.put(tmp)
 
     def setup_logging(self):
         self.logger = logging.getLogger('sub{0}'.format(self.info.id))
