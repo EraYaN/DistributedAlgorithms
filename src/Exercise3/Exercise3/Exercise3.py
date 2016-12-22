@@ -32,8 +32,8 @@ logger = logging.getLogger('main')
 
 
 exitevent = None
-NUM_NODES = 250
-AVG_CANDIDATES = 25#floor(NUM_NODES/5)
+NUM_NODES = 10
+AVG_CANDIDATES = 4#floor(NUM_NODES/5)
 CURRENT_HOST = '145.94.213.228'
 ROUTER_HOST = '145.94.213.228'
 LOCALHOST = 'localhost'
@@ -112,21 +112,25 @@ def main():
     routerdealerhost = ROUTER_HOST
     if routerdealerhost == CURRENT_HOST:
         routerdealerhost = LOCALHOST
-    routerinfo = ex3.NodeInfo(0,ex3.Transport.TCP,routerdealerhost,routerport,routerdealerhost != CURRENT_HOST)
-    dealerinfo = ex3.NodeInfo(0,ex3.Transport.TCP,routerdealerhost,dealerport,routerdealerhost != CURRENT_HOST)
-
-    if routerinfo.local or dealerinfo.local:
-        routerevent = mp.Event()
-        router_proc = mp.Process(target=router, name="RouterProcs", args=(routerport,dealerport,routerevent))
-
-    router_proc.start()
-
-    logger.log(1000,"Starting system.")
+    routerinfo = ex3.NodeInfo(0,ex3.Transport.TCP,routerdealerhost,routerport,routerdealerhost == LOCALHOST)
+    dealerinfo = ex3.NodeInfo(0,ex3.Transport.TCP,routerdealerhost,dealerport,routerdealerhost == LOCALHOST)
 
     all_systems = [
         {"host":"145.94.213.228","transport":ex3.Transport.TCP,"startport":startport,"number":NUM_NODES},
         {"host":"145.94.206.208","transport":ex3.Transport.TCP,"startport":startport,"number":NUM_NODES}
     ]
+
+    if routerinfo.local or dealerinfo.local:
+        routerevent = mp.Event()
+        router_proc = mp.Process(target=router, name="RouterProcs", args=(routerport,dealerport,routerevent))
+        router_proc.start()
+        if len(all_systems) > 1:
+            #input("Press enter to continue..")
+            time.sleep(5)
+
+    logger.log(1000,"Starting system.")
+    
+    
 
     nis = {}
     i = 0

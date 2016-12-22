@@ -78,7 +78,7 @@ class Node(object):
         self.dealeruri = dealeruri
 
         self.untraversed = [id for id in self.nodeinfos if id != self.info.id]
-        #random.shuffle(self.untraversed)
+        random.shuffle(self.untraversed)
 
     def run(self,exitevent):
         #random_int = struct.unpack('I',os.urandom(4))[0]
@@ -147,7 +147,7 @@ class Node(object):
 
     def random_delay(self):
         # Random delay between 0 and 0.1 seconds
-        time.sleep(0.025)#random.random()/10)
+        time.sleep(random.random()/10)
 
     def handle_ordinary(self, message: Message):
         if message.level == self.level and message.id == self.owner_id:
@@ -259,7 +259,6 @@ class Node(object):
 
 
                 if type(message) is Message:
-                    self.random_delay()
                     if self.info.id == message.dst.id:
                         self.q_rx.put(message)
                     else:
@@ -275,8 +274,7 @@ class Node(object):
     def client_thread(self):
         if self.client_socket is not None:
             while True:
-                message = self.q_tx.get(block=True) # waits for message
-                self.random_delay()
+                message = self.q_tx.get(block=True) # waits for message                
                 self.client_socket.send(b"\xEF\xEF\xEF\xEF", flags=zmq.SNDMORE) # Dealer IDentity
                 self.client_socket.send(struct.pack('i',message.dst.id), flags=zmq.SNDMORE) # Destination
                 self.client_socket.send(b"", flags=zmq.SNDMORE)
