@@ -1,22 +1,15 @@
 import multiprocessing as mp
-
 import logging
 import time
-
-import mplog
-import ex3
-
 import atexit
 import signal
 import sys
 import multiprocessing_logging
-
-from router import router
-
-
+import os
 from math import floor
 
-import os
+import ex3
+from router import router
 
 multiprocessing_logging.install_mp_handler()
 
@@ -117,7 +110,7 @@ def main():
 
     all_systems = [
         {"host":"145.94.213.228","transport":ex3.Transport.TCP,"startport":startport,"number":NUM_NODES},
-        {"host":"145.94.206.208","transport":ex3.Transport.TCP,"startport":startport,"number":NUM_NODES}
+        #{"host":"145.94.206.208","transport":ex3.Transport.TCP,"startport":startport,"number":NUM_NODES}
     ]
 
     if routerinfo.local or dealerinfo.local:
@@ -125,7 +118,7 @@ def main():
         router_proc = mp.Process(target=router, name="RouterProcs", args=(routerport,dealerport,routerevent))
         router_proc.start()
         if len(all_systems) > 1:
-            #input("Press enter to continue..")
+            logger.log(1000,"Waiting for 5 seconds.")#input("Press enter to continue..")
             time.sleep(5)
 
     logger.log(1000,"Starting system.")
@@ -154,7 +147,6 @@ def main():
     #with mplog.open_queue() as log_queue:
     try:
         for n in nodes:
-            #proc = mp.Process(target=mplog.logged_call, daemon=True, name="Node-{0}".format(n.info.id),args=(log_queue, node_wrapper, n, synchronizer, exitevent))
             proc = mp.Process(target=node_wrapper, name="Node-{0:06}".format(n.info.id),args=(n, synchronizer, exitevent))
             proc.start()
             logger.info("Started Process {0}.".format(n.info.id))
