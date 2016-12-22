@@ -1,0 +1,207 @@
+\documentclass{article}
+\input{../.library/include.tex}
+\addbibresource{../.library/bibliography.bib}
+
+\title{Election in Asynchronous Complete Networks\\{\large IN4150 -- Distributed Algorithms -- Lab Report for Exercise 3c}}
+\author{Erwin de Haan (4222814) \and Robin Hes (4236815)}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+This report describes an implementation of Afek and Gafni's algorithm for election in asynchronous complete networks \cite{afek1985time}. Election is the process of the entire system assigning a single candidate process as being selected, without any node having knowledge about any other node in the system. The implementation should comply to the following specifications:
+
+\begin{enumerate}
+	\item a process should be elected regardless of the amount of candidate (competing) processes in the system,
+	\item the algorithm should be truly distributed in the sense that it could run on any number of machines, and
+	\item the algorithm should be able to handle arbitrary transport delays.
+\end{enumerate}
+
+The implementation is written in the Python programming language, using PyZMQ (ZeroMQ for Python) as a networking abstraction layer. ZeroMQ allows for a ROUTER/DEALER scheme to reduce the amount of sockets required per node and should therefor enable the developer to create a truly scalable architecture.
+
+\section{The algorithm}
+Afek and Gafni's algorithm for election in asynchronous complete networks is an election algorithm with a time complexity of $\mathcal{O}(n)$ and a message complexity of $\mathcal{O}(n\log n)$, making it fairly efficient in terms of both time and message count. The algorithm itself is not described here, but may be found in \cite[p.12]{afek1985time}.
+
+We would however like to use this section to point out a deficiency in the algorithm. Consider a system consisting of, among others, the processes $A$, $B$ and $C$, of which both $A$ and $C$ are candidate processes. Furthermore, consider the following course of events.
+
+\begin{enumerate}
+	\item \label{itm:1} $A$ sends a capture attempt to $B$.
+	\item \label{itm:2} $A$ receives a capture attempt from $C$, which is ranked higher, and therefore $A$ is killed.
+	\item \label{itm:3} $B$ sends an acknowledgment to $A$ for its capture attempt in step~\ref{itm:1}.
+	\item $A$ will receive this acknowledgment only after it has been killed by $C$ in step~\ref{itm:2}. According to the algorithm, it will interpret the acknowledgment as a kill attempt from $B$, on behalf of itself. It will therefore acknowledge this kill attempt to $B$.
+	\item $B$ will interpret this acknowledgment as an additional capture attempt, bringing the algorithm back to step~\ref{itm:3} and causing a livelock.
+\end{enumerate}
+
+In practice, this situation was observed to occur quite often, especially for systems consisting of many nodes, severely reducing the effectiveness of the algorithm. This issue can be solved with a small addition to the algorithm. The original algorithm contains the procedure for the handling of an acknowledgment by a candidate process as shown in \cref{alg:original}, characterized by the id contained by the message being equal to the candidate process' own.
+
+\begin{algorithm}
+	\caption{Snippet from Afek and Gafni's asynchronous algorithm B}
+	\begin{algorithmic}
+		\IF{$id' = id$ \AND \NOT $killed$}
+			\STATE $level \gets 1$
+			\STATE $untraversed \gets untraversed \setminus l$
+		\ENDIF
+	\end{algorithmic}
+	\label{alg:original}
+\end{algorithm}
+
+This corresponds to a successful capture of the node connected via link $l$. We propose to extend this block with a case in which the node is already killed, but still receives an acknowledgment for a previously sent capture message. This extension is shown in \cref{alg:improved}.
+
+\begin{algorithm}
+	\caption{The proposed modifications to the original algorithm shown in \cref{alg:original}}
+	\begin{algorithmic}
+		\IF{$id' = id$}
+			\IF{$killed$}
+				\STATE discard message
+			\ELSE
+				\STATE $level \gets 1$
+				\STATE $untraversed \gets untraversed \setminus l$
+			\ENDIF
+		\ENDIF{}
+	\end{algorithmic}
+	\label{alg:improved}
+\end{algorithm}
+
+Note that the algorithm will now simply discard any acknowledgments arriving when it already has been killed, avoiding the previously described livelock.
+
+\section{Testing the algorithm}
+This section describes a number of different test cases that were employed to verify the correctness of the algorithm's implementation. As per the assignment, the following statistics are listed:
+
+\begin{itemize}
+	\item the numbers of capture/kill and acknowledgment messages sent/received,
+	\item the maximum levels reached by the processes, and
+	\item the number of times every process is captured.
+\end{itemize}
+
+All test cases were executed with pseudo-random processing and transport delays to simulate real world behavior.
+
+\subsection{A single candidate}
+In a very simple scenario, execution will start with a single candidate that wants to be elected, among a small group processes. The expected behavior is that the candidate process will simply capture the other processes in the order in which they appear in the untraversed list.
+
+\begin{table}[H]
+	\centering
+	\caption{Node and message counts for the single candidate test case}
+	\begin{tabular}{l r}
+		\toprule
+		Nodes 					& 10	\\
+		Candidates 				& 1 	\\
+		Captures/kill attempts 	& 9		\\
+		Acknowledgments 		& 9		\\
+		\bottomrule
+	\end{tabular}
+	\label{tab:counts-single}
+\end{table}
+
+In practice, this was indeed observed to happen, corresponding to the counts listed in \cref{tab:counts-single}. Note that these counts agree with a single process sending a capture message to all nine other process and receiving an acknowledgment back from each of them.
+
+\begin{table}[H]
+	\centering
+	\caption{Node statistics for the single candidate test case}
+	\begin{tabular}{c c r r}
+		\toprule
+		Node \#	& Was candidate	& Final level 	& Times captured	\\
+		\midrule
+		1		& \textbf{x}	& 9				& 0					\\
+		2		& 				& 3				& 1					\\
+		3		& 				& 2				& 1					\\
+		4		& 				& 0				& 1					\\
+		5		& 				& 1				& 1					\\
+		6		& 				& 6				& 1					\\
+		7		& 				& 8				& 1					\\
+		8		& 				& 5				& 1					\\
+		9		& 				& 4				& 1					\\
+		10		& 				& 7				& 1					\\
+		\bottomrule
+	\end{tabular}
+	\label{tab:stats-single}
+\end{table}
+
+The same holds for the node statistics shown in \cref{tab:stats-single}, which shows every ordinary process increasing its level by one upon being captured, resulting in a level increasing up to a maximum of 8 for the node that is captured last. The candidate process reaches a final level of 9 and is never captured itself since it captures all other nodes and there are no other candidates present in the system.
+
+\subsection{Multiple candidates}
+The second test case contains the same amount of processes but adds some addition candidates to test the ability of candidates to kill other candidates. To prevent all candidates trying to capture a single ordinary process at the same time and therefore instantly getting killed by the first process, the untraversed list is randomized per process.
+
+\begin{table}[H]
+	\centering
+	\caption{Node and message counts for the multiple candidate test case}
+	\begin{tabular}{l r}
+		\toprule
+		Nodes 					& 10	\\
+		Candidates 				& 4 	\\
+		Captures/kill attempts 	& 18	\\
+		Acknowledgments 		& 15	\\
+		\bottomrule
+	\end{tabular}
+	\label{tab:counts-multiple}
+\end{table}
+
+\cref{tab:stats-multiple} shows a discrepancy between capture/kill attempts and acknowledgments, indicating the candidate nodes are contesting each other while trying to capture the ordinary processes.
+
+\begin{table}[H]
+	\centering
+	\caption{Node statistics for the multiple candidate test case}
+	\begin{tabular}{l c r r}
+		\toprule
+		Node \#	& Was candidate	& Final level 	& Times captured	\\
+		\midrule
+		1		& x				& 1				& 0					\\
+		2		& x				& 0				& 0					\\
+		3		& x				& 2				& 0					\\
+		4		& \textbf{x}	& 9				& 0					\\
+		5		& 				& 5				& 1					\\
+		6		& 				& 8				& 1					\\
+		7		& 				& 0				& 1					\\
+		8		& 				& 4				& 1					\\
+		9		& 				& 6				& 1					\\
+		10		& 				& 2				& 1					\\
+		\bottomrule
+	\end{tabular}
+	\label{tab:stats-multiple}
+\end{table}
+
+The further statistics listed in \cref{tab:stats-multiple} show that processes 2 and 7 were killed/captured instantaneously without being allowed to increase their level in any way. Note that process 4 is elected, after capturing the other candidate nodes 1, 2 and 3 very quickly. This implies an efficient algorithm, as the other candidates are killed before they can attempt to capture too many ordinary processes, thereby introducing message overhead.
+
+\subsection{Many processes and multiple candidates}
+In an attempt to push the system to its limits the fourth test case consists of a scenario with a very large number of nodes, is otherwise similar to the previous test case, so multiple candidates.
+
+\begin{table}[H]
+	\centering
+	\caption{Node and message counts for the many processes with multiple candidates test case}
+	\begin{tabular}{l r}
+		\toprule
+		Nodes 					& 250	\\
+		Candidates 				& 100 	\\
+		Capture/kill attempts 	& 464	\\
+		Acknowledgments 		& 363	\\
+		\bottomrule
+	\end{tabular}
+	\label{tab:counts-many}
+\end{table}
+
+It is interesting to note that the amount of acknowledgments is relatively smaller than the amount of capture and kill attempts as was the case in the previous test case. This can be explained by the increased amount of candidates, performing additional capture attempts and failing at them. Clearly, it is infeasible to list the final state of every process for this scenario. These results are therefore omitted.
+
+\subsection{Multiple candidates on separate machines}
+Finally, to prove the implementation to be fully distributed, it was run on two separate machines in a scenario similar to the second test case with a relatively small amount of processes, but multiple candidates.
+
+\begin{table}[H]
+	\centering
+	\caption{Node and message counts for the multiple candidates on separate machines test case}
+	\begin{tabular}{l r}
+		\toprule
+		Nodes 					& 20	\\
+		Candidates 				& 4 	\\
+		Capture/kill attempts 	& 22	\\
+		Acknowledgments 		& 19	\\
+		\bottomrule
+	\end{tabular}
+	\label{tab:counts-separate}
+\end{table}
+
+This shows similar results as the local test case, indicating the algorithm also works correctly on multiple machines and is therefore truly distributed.
+
+\section{Conclusion}
+It was shown that Afek and Gafni's algorithm was implemented correctly, but only after introducing some improvements. The implementation was tested locally, with some and many nodes and additionally proven to work on multiple machines and is therefore scalable and truly distributed. This is in part due to the fact ZeroMQ was used to handle all networking.
+
+\printbibliography
+
+\end{document}
