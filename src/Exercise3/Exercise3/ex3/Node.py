@@ -67,6 +67,9 @@ class Node(object):
     stat_sent_ack = 0
     stat_recv_ack = 0
 
+    stat_sent = 0
+    stat_recv = 0
+
     # DEBUG
     quitting = False
 
@@ -93,6 +96,7 @@ class Node(object):
         self.start_time = time.perf_counter()
 
         while not self.quitting and not exitevent.is_set():
+            self.random_delay()
             # Attempt to capture next link if required.
             if self.candidate and capture_new_link:
                 new_link = self.untraversed[-1]
@@ -102,6 +106,7 @@ class Node(object):
             try:
                 #self.logger.debug("Waiting for package.")
                 message = self.q_rx.get(block=True, timeout=0.05) # waits for message, timeout is to reduce CPU load.
+                self.stat_recv += 1
                 if message.done == True:
                     self.logger.debug("Got broadcast message from elected node.")
                     self.quitting=True
@@ -110,6 +115,7 @@ class Node(object):
                 if self.candidate:
                     capture_new_link = False
             else:
+                self.random_delay()
                 if self.candidate:
                     # self.logger.debug("Handled packet as candidate.")
                     capture_new_link = self.handle_candidate(message)
@@ -132,7 +138,12 @@ class Node(object):
         else:
             self.logger.debug("Run ended.")
 
-        print("#Stats;id;{: 3};level;{: 3};times_captured;{: 3};sent_ack;{: 3};recv_ack;{: 3};sent_kill;{: 3};recv_kill;{: 3};sent_cap;{: 3};recv_cap;{: 3}".format(
+        if self.elected:
+            print("##Header;id;level;times_captured;sent_ack;recv_ack;sent_kill;recv_kill;sent_cap;recv_cap;sent;recv;q_tx;q_rx")
+
+        time.sleep(5)
+
+        print("##Stats;{: 3};{: 3};{: 3};{: 3};{: 3};{: 3};{: 3};{: 3};{: 3};{: 3};{: 3};{: 3};{: 3}".format(
                     self.info.id,
                     self.level,
                     self.stat_times_captured,
@@ -141,7 +152,11 @@ class Node(object):
                     self.stat_sent_kill,
                     self.stat_recv_kill,
                     self.stat_sent_cap,
-                    self.stat_recv_cap
+                    self.stat_recv_cap,
+                    self.stat_sent,
+                    self.stat_recv,
+                    len(list(self.q_tx.queue)),
+                    len(list(self.q_rx.queue))
                     )
                 )
 
@@ -191,7 +206,7 @@ class Node(object):
             else:
                 self.level += 1
                 link_id = self.untraversed.pop()
-                self.logger.debug("Received acknowledgement for capture attempt, captured node {0}, {1} remaining.".format(link_id, len(self.untraversed)))
+                self.logger.info("Received acknowledgement for capture attempt, captured node {0}, {1} remaining.".format(link_id, len(self.untraversed)))
                 self.stat_recv_ack += 1
                 return True
 
@@ -210,6 +225,7 @@ class Node(object):
 
     def send(self, message):
         self.q_tx.put(message)
+        self.stat_sent += 1
 
     def broadcast(self, message):
         for id in self.nodeinfos:
@@ -219,6 +235,7 @@ class Node(object):
             tmp = copy.deepcopy(message)
             tmp.dst = ni
             self.q_tx.put(tmp)
+            self.stat_sent += 1
 
     def setup_logging(self):
         self.logger = logging.getLogger('sub{}'.format(self.info.id))

@@ -1,1 +1,2 @@
 pyzmq==16.0.*
+multiprocessing_logging>=0.2.4

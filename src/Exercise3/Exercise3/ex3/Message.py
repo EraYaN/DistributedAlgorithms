@@ -1,5 +1,6 @@
 from ex3 import NodeInfo
 import random
+
 class Message(object):
     """Describes a single message"""
 
