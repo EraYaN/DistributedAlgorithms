@@ -22,7 +22,9 @@ The implementation is written in the Python programming language, using PyZMQ (Z
 \section{The algorithm}
 Afek and Gafni's algorithm for election in asynchronous complete networks is an election algorithm with a time complexity of $\mathcal{O}(n)$ and a message complexity of $\mathcal{O}(n\log n)$, making it fairly efficient in terms of both time and message count. The algorithm itself is not described here, but may be found in \cite[p.12]{afek1985time}.
 
-We would however like to use this section to point out a deficiency in the algorithm. Consider a system consisting of, among others, the processes $A$, $B$ and $C$, of which both $A$ and $C$ are candidate processes. Furthermore, consider the following course of events.
+We would however like to use this section to propose a slight simplification of the algorithm, namely, not starting an ordinary process for a node that is to be a candidate node, to reduce superfluous processing and messaging. This simplification does however introduce a situation in which the algorithm stops to function, as elaborated in the following.
+
+Consider a system consisting of, among others, the processes $A$, $B$ and $C$, of which both $A$ and $C$ are candidate processes. Furthermore, consider the following course of events.
 
 \begin{enumerate}
 	\item \label{itm:1} $A$ sends a capture attempt to $B$.
@@ -62,7 +64,7 @@ This corresponds to a successful capture of the node connected via link $l$. We 
 	\label{alg:improved}
 \end{algorithm}
 
-Note that the algorithm will now simply discard any acknowledgments arriving when it already has been killed, avoiding the previously described livelock.
+Note that the algorithm will now simply discard any acknowledgments arriving when it already has been killed, avoiding the previously described livelock. Modifying the algorithm in this way effectively removes the node from the execution flow, only allowing itself to be killed again by other candidate nodes.
 
 \section{Testing the algorithm}
 This section describes a number of different test cases that were employed to verify the correctness of the algorithm's implementation. As per the assignment, the following statistics are listed:
@@ -200,7 +202,7 @@ Finally, to prove the implementation to be fully distributed, it was run on two 
 This shows similar results as the local test case, indicating the algorithm also works correctly on multiple machines and is therefore truly distributed.
 
 \section{Conclusion}
-It was shown that Afek and Gafni's algorithm was implemented correctly, but only after introducing some improvements. The implementation was tested locally, with some and many nodes and additionally proven to work on multiple machines and is therefore scalable and truly distributed. This is in part due to the fact ZeroMQ was used to handle all networking.
+It was shown that Afek and Gafni's algorithm was implemented correctly in a slightly simplified manner in which any node only runs a candidate \emph{or} an ordinary process and never both. The implementation was tested locally, with some and many nodes and additionally proven to work on multiple machines and is therefore scalable and truly distributed. This is in part due to the fact ZeroMQ was used to handle all networking.
 
 \printbibliography
 
