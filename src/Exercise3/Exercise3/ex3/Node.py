@@ -100,6 +100,7 @@ class Node(object):
                 self.logger.debug("Sent capture attempt to {}.".format(new_link))
                 self.stat_sent_cap += 1
             try:
+                #self.logger.debug("Waiting for package.")
                 message = self.q_rx.get(block=True, timeout=0.05) # waits for message, timeout is to reduce CPU load.
                 if message.done == True:
                     self.logger.debug("Got broadcast message from elected node.")
@@ -122,7 +123,7 @@ class Node(object):
                         time.sleep(0.5)
                         self.broadcast(Message(self.info,self.info,self.level,self.info.id,True))
                 else:
-                    self.logger.debug("Handled packet as ordinary.")
+                    #self.logger.debug("Handled packet as ordinary.")
                     self.handle_ordinary(message)
 
         if self.elected:
@@ -131,7 +132,7 @@ class Node(object):
         else:
             self.logger.debug("Run ended.")
 
-        self.logger.info("#Stats;id;{: 3};level;{: 3};times_captured;{: 3};sent_ack;{: 3};recv_ack;{: 3};sent_kill;{: 3};recv_kill;{: 3};sent_cap;{: 3};recv_cap;{: 3}".format(
+        print("#Stats;id;{: 3};level;{: 3};times_captured;{: 3};sent_ack;{: 3};recv_ack;{: 3};sent_kill;{: 3};recv_kill;{: 3};sent_cap;{: 3};recv_cap;{: 3}".format(
                     self.info.id,
                     self.level,
                     self.stat_times_captured,
@@ -147,7 +148,6 @@ class Node(object):
     def random_delay(self):
         # Random delay between 0 and 0.1 seconds
         time.sleep(0.025)#random.random()/10)
-        #pass
 
     def handle_ordinary(self, message: Message):
         if message.level == self.level and message.id == self.owner_id:
@@ -221,7 +221,7 @@ class Node(object):
             self.q_tx.put(tmp)
 
     def setup_logging(self):
-        self.logger = logging.getLogger('sub{0}'.format(self.info.id))
+        self.logger = logging.getLogger('sub{}'.format(self.info.id))
 
     def start_server(self):
         # Setup listener:

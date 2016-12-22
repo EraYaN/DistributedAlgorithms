@@ -32,9 +32,10 @@ logger = logging.getLogger('main')
 
 
 exitevent = None
-NUM_NODES = 4
-AVG_CANDIDATES = 1#floor(NUM_NODES/5)
-CURRENT_HOST = '192.168.178.13'
+NUM_NODES = 250
+AVG_CANDIDATES = 25#floor(NUM_NODES/5)
+CURRENT_HOST = '145.94.213.228'
+ROUTER_HOST = '145.94.213.228'
 LOCALHOST = 'localhost'
 
 def node_wrapper(node: ex3.Node, synchronizer, exitevent):
@@ -108,7 +109,7 @@ def main():
     startport = 32516
     routerport = 32514
     dealerport = 32515
-    routerdealerhost = '192.168.178.13'
+    routerdealerhost = ROUTER_HOST
     if routerdealerhost == CURRENT_HOST:
         routerdealerhost = LOCALHOST
     routerinfo = ex3.NodeInfo(0,ex3.Transport.TCP,routerdealerhost,routerport,routerdealerhost != CURRENT_HOST)
@@ -123,8 +124,8 @@ def main():
     logger.log(1000,"Starting system.")
 
     all_systems = [
-        {"host":"192.168.178.13","transport":ex3.Transport.TCP,"startport":startport,"number":NUM_NODES},
-        #{"host":"192.168.178.3","transport":ex3.Transport.TCP,"startport":startport,"number":NUM_NODES}
+        {"host":"145.94.213.228","transport":ex3.Transport.TCP,"startport":startport,"number":NUM_NODES},
+        {"host":"145.94.206.208","transport":ex3.Transport.TCP,"startport":startport,"number":NUM_NODES}
     ]
 
     nis = {}
@@ -152,7 +153,7 @@ def main():
             #proc = mp.Process(target=mplog.logged_call, daemon=True, name="Node-{0}".format(n.info.id),args=(log_queue, node_wrapper, n, synchronizer, exitevent))
             proc = mp.Process(target=node_wrapper, name="Node-{0:06}".format(n.info.id),args=(n, synchronizer, exitevent))
             proc.start()
-            logger.info("Stared Process {0}.".format(n.info.id))
+            logger.info("Started Process {0}.".format(n.info.id))
             procs.append(proc)
 
         logger.info("Started nodes.")
